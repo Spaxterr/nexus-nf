@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDir": "./src",
+    "target": "ES2024",
+    "lib": ["ES2024"],
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/templates",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
+}

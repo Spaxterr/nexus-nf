@@ -1,0 +1,44 @@
+{
+  "name": "pinecone",
+  "version": "0.1.0",
+  "description": "Lightweight framework for building NATS microservices with TypeScript",
+  "main": "dist/runtime/index.js",
+  "types": "dist/runtime/index.d.ts",
+  "bin": {
+    "pinecone": "dist/cli/index.js"
+  },
+  "files": [
+    "dist/",
+    "src/templates/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "test": "jest",
+    "prepublishOnly": "npm run build",
+    "commitlint": "commitlint --edit"
+  },
+  "author": "Spaxter",
+  "license": "MIT",
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "typescript": "^5.8.3"
+  }
+}
