@@ -14,6 +14,10 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "lint:staged": "eslint --fix",
+    "format": "prettier --write .",
+    "format:staged": "prttier --write",
+    "fixall": "npm run lint && npm run format",
     "test": "jest",
     "prepublishOnly": "npm run build",
     "commitlint": "commitlint --edit"
