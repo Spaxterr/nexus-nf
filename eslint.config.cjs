@@ -127,13 +127,6 @@ module.exports = [
             'no-var': 'error',
             'object-shorthand': 'error',
             'prefer-template': 'error',
-            'prefer-destructuring': [
-                'error',
-                {
-                    array: true,
-                    object: true,
-                },
-            ],
             'no-duplicate-imports': 'error',
             'sort-imports': [
                 'error',
