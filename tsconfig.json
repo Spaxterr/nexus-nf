@@ -17,9 +17,16 @@
         "rootDir": "./src",
         "target": "ES2021",
         "lib": ["ES2021"],
-        "forceConsistentCasingInFileNames": true,
+        "experimentalDecorators": true,
         "skipLibCheck": true,
-        "experimentalDecorators": true
+        "forceConsistentCasingInFileNames": true,
+        "removeComments": true,
+        "noImplicitReturns": true,
+        "exactOptionalPropertyTypes": true,
+        "noImplicitOverride": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noUncheckedIndexedAccess": true,
+        "emitDecoratorMetadata": true
     },
     "include": ["src/**/*"],
     "exclude": [
