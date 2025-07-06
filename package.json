@@ -1,7 +1,7 @@
 {
     "name": "nexus-nf",
     "version": "0.1.0",
-    "description": "Lightweight framework for building NATS microservices with TypeScript",
+    "description": "NexusNF is a lightweight and simple framework for building NATS microservices with TypeScript",
     "main": "./dist/index.js",
     "types": "dist/index.d.ts",
     "bin": {
