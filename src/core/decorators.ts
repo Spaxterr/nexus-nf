@@ -9,7 +9,7 @@ export const CONTROLLER_MARKER = Symbol('nexus-controller');
 
 export interface NexusController {
     group: string;
-    queue?: string;
+    queue?: string | undefined;
     endpoints: EndpointEntry[];
 }
 
@@ -28,7 +28,7 @@ export function Controller(name: string, options?: ControllerOptions) {
 
         return class extends constructor implements NexusController {
             public readonly group: string = name;
-            public readonly queue?: string;
+            public readonly queue?: string | undefined;
             public readonly endpoints: EndpointEntry[] = [];
 
             constructor(...args: any[]) {
