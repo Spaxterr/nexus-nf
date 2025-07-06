@@ -2,6 +2,7 @@
     "name": "nexus-nf",
     "version": "0.1.0",
     "description": "NexusNF is a lightweight and simple framework for building NATS microservices with TypeScript",
+    "type": "module",
     "main": "./dist/index.js",
     "types": "dist/index.d.ts",
     "bin": {
@@ -10,27 +11,52 @@
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
-            "import": "./dist/index.js",
+            "import": "./dist/index.mjs",
             "require": "./dist/index.js"
         }
     },
     "files": [
         "dist/",
-        "src/templates/"
+        "README.md",
+        "LICENSE"
     ],
     "scripts": {
-        "build": "tsc",
+        "build": "npm run clean && npm run build:types && npm run build:esm && npm run build:cjs",
+        "build:types": "tsc --emitDeclarationOnly --outDir dist",
+        "build:esm": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.mjs --external:nats",
+        "build:cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.js --external:nats",
+        "clean": "rimraf dist",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
         "lint:staged": "eslint --fix",
         "format": "prettier --write .",
         "format:staged": "prttier --write",
         "fixall": "npm run lint && npm run format",
         "test": "jest",
-        "prepublishOnly": "npm run build",
+        "prepublishOnly": "npm run build && npm run lint",
+        "release": "np",
+        "docs": "typedoc src/index.ts",
         "commitlint": "commitlint --edit"
     },
-    "author": "Spaxter",
+    "keywords": [
+        "nats",
+        "microservices",
+        "typescript",
+        "messaging",
+        "framework"
+    ],
+    "author": "Spaxter <spaxtersurvival@gmail.com>",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Spaxterr/nexus-nf.git"
+    },
+    "bugs": {
+        "url": "https://github.com/Spaxterr/nexus-nf/issues"
+    },
+    "homepage": "https://github.com/Spaxterr/nexus-nf#readme",
+    "peerDependencies": {
+        "nats": "^2.29.3"
+    },
     "lint-staged": {
         "*.{js,ts,tsx}": [
             "eslint --fix",
@@ -45,12 +71,16 @@
         "@commitlint/config-conventional": "^19.8.1",
         "@typescript-eslint/eslint-plugin": "^8.35.0",
         "@typescript-eslint/parser": "^8.35.0",
+        "esbuild": "^0.25.5",
         "eslint": "^9.29.0",
         "eslint-config-prettier": "^10.1.5",
         "eslint-plugin-prettier": "^5.5.0",
         "husky": "^9.1.7",
         "lint-staged": "^16.1.2",
+        "np": "^10.2.0",
         "pino-pretty": "^13.0.0",
+        "rimraf": "^6.0.1",
+        "typedoc": "^0.28.7",
         "typescript": "^5.8.3"
     },
     "dependencies": {
