@@ -13,12 +13,16 @@ export interface NexusController {
     endpoints: EndpointEntry[];
 }
 
+export interface ControllerOptions {
+    queue?: string;
+}
+
 /**
  * Create a new controller, representing an endpoint group for a NATS microservice.
  *
  * @param name Name of controller / endpoint group.
  */
-export function Controller(name: string) {
+export function Controller(name: string, options?: ControllerOptions) {
     return function <T extends { new (...args: any[]): {} }>(constructor: T) {
         (constructor as any)[CONTROLLER_MARKER] = true;
 
@@ -30,6 +34,7 @@ export function Controller(name: string) {
             constructor(...args: any[]) {
                 super(...args);
                 this.group = name;
+                this.queue = options?.queue;
 
                 // Extract endpoints from constructor data added by `@Endpoint`.
                 const endpoints: EndpointEntry[] = (constructor as any).__endpoints__ ?? [];
