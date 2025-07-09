@@ -30,7 +30,7 @@ export class NexusApp {
     public readonly service: Service;
     public readonly client: ServiceClient;
     private readonly groups: Map<string, ServiceGroup>;
-    private readonly registeredControllers: Set<NexusController>;
+    private readonly registeredControllers: Set<ObjectConstructor>;
 
     /**
      * @param natsConnection NATS connection instance
@@ -85,7 +85,7 @@ export class NexusApp {
         if (err !== null) {
             const errorResponse: ErrorResponse = {
                 error: true,
-                message: err.message ?? 'NATS error occurred',
+                message: err.message ?? 'Unknown NATS Error',
                 code: err.code,
                 details: err.name,
             };
@@ -94,9 +94,10 @@ export class NexusApp {
         }
 
         try {
-            let data: Parameters<typeof handler> | Uint8Array;
+            type ParameterType = Parameters<typeof handler>;
+            let data: ParameterType | Uint8Array;
             try {
-                data = msg.json<Parameters<typeof handler>>();
+                data = msg.json<ParameterType>();
             } catch {
                 // If message can't be parsed, fall back to raw data
                 data = msg.data;
@@ -111,10 +112,11 @@ export class NexusApp {
 
             msg.respond(JSON.stringify(response));
         } catch (err) {
+            const dev = process.env?.['NODE_ENV'] === 'dev';
             const errorResponse: ErrorResponse = {
                 error: true,
-                message: err instanceof Error ? err.message : 'Internal server error',
-                details: err instanceof Error ? err.stack : undefined,
+                message: dev && err instanceof Error ? err.message : 'Internal server error',
+                details: dev && err instanceof Error ? err.stack : undefined,
                 code: err instanceof NatsError ? err.code : '500',
             };
 
