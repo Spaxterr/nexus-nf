@@ -28,9 +28,9 @@ npm install nexus-nf nats
 ```jsonc
 // tsconfig.json
 {
-    ...
+    // ...
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
 }
 ```
 
