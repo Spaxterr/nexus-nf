@@ -93,6 +93,7 @@ transformed into an error response.
 
 ```typescript
 @Controller('example') {
+class ExampleController {
     @Endpoint('error')
     async exampleError() {
         throw new NatsError('This is an example error', '500');
