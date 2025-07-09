@@ -38,9 +38,9 @@ npm install nexus-nf nats
 }
 ```
 
-## Quick Start
+## Implementation
 
-**Implementation**
+**Basic Example**
 
 ```typescript
 // index.ts
@@ -81,9 +81,28 @@ app.registerController(new MathController());
 **Requesting the declared endpoint**
 
 ```bash
-nats request "math.add" '{"firstNumber": 10, "secondNumber": 15}' # Response: {"error":false,"data":25}
+nats request "math.add" '{"firstNumber": 10, "secondNumber": 15}'
+# {"error":false,"data":25}
 
-nats request "math.multiply" '{"firstNumber": 4, "secondNumber": 6}' # Response: {"error":false,"data":24}
+nats request "math.multiply" '{"firstNumber": 6, "secondNumber": 10}'
+# {"error":false,"data":60}
+```
+
+**Error Handling** Errors thrown from endpoint handlers are automatically
+transformed into an error response.
+
+```typescript
+@Controller('example') {
+    @Endpoint('error')
+    async exampleError() {
+        throw new NatsError('This is an example error', '500');
+    }
+}
+```
+
+```bash
+nats request "example.error" "{\"firstNumber\": 10, \"secondNumber\": 15}"
+# {"error":true,"message":"This is an example error","code":"500"}
 ```
 
 ## Contribution Guide
