@@ -5,9 +5,9 @@ building NATS microservices using TypeScript. Nexus utilizes NATS's built-in
 [service API](https://docs.nats.io/using-nats/developer/services) to register
 services, endpoint groups and endpoints.
 
-> Notice! NexusNF is currently in very early stages of development. Many
-> features are yet to be implemented and bugs are to be expected. Feel free to
-> open bug reports using the issues tab on GitHub.
+> ⚠️ **Early Development**: NexusNF is currently in very early stages of
+> development. Expect changes, missing features and bugs. Please report issues
+> on [GitHub](https://github.com/Spaxterr/nexus-nf/issues/new).
 
 ## Features
 
@@ -15,7 +15,9 @@ services, endpoint groups and endpoints.
   Although terminology like "Controllers" are used, the framework does not force
   you to use a specific approach or design.
 - **TypeScript Support**: Full type-safety included.
-- **Modules**: Supports both ESM and CommonJS.
+- **Flexible Modules**: Supports both ESM and CommonJS.
+- **NATS Service Integration**: Uses NATS's service discovery and
+  request-response patterns.
 
 ## Installation
 
@@ -28,9 +30,11 @@ npm install nexus-nf nats
 ```jsonc
 // tsconfig.json
 {
-    // ...
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "compilerOptions": {
+        // ...
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+    },
 }
 ```
 
@@ -43,12 +47,21 @@ npm install nexus-nf nats
 import { connect } from 'nats';
 import { Controller, Endpoint, NexusApp } from 'nexus-nf';
 
+interface MathMessage {
+    firstNumber: number;
+    secondNumber: number;
+}
+
 @Controller('math')
-class Math {
-    // Creates a `math.add` endpoint
+class MathController {
     @Endpoint('add')
-    async add(message: { firstNumber: number; secondNumber: number }) {
+    async add(message: MathMessage) {
         return message.firstNumber + message.secondNumber;
+    }
+
+    @Endpoint('multiply')
+    async multiply(message: MathMessage) {
+        return message.firstNumber * message.secondNumber;
     }
 }
 
@@ -62,12 +75,26 @@ const service = await nc.services.add({
 const app = new NexusApp(nc, service);
 
 // Register the controller class
-app.registerController(new Math());
+app.registerController(new MathController());
 ```
 
-Requesting the previous endpoint works as usual
+**Requesting the declared endpoint**
 
 ```bash
-nats request "math.add" "{\"firstNumber\": 10, \"secondNumber\": 15}"
-# {"error":false,"data":25}
+nats request "math.add" '{"firstNumber": 10, "secondNumber": 15}' # Response: {"error":false,"data":25}
+
+nats request "math.multiply" '{"firstNumber": 4, "secondNumber": 6}' # Response: {"error":false,"data":24}
 ```
+
+## Contribution Guide
+
+- Fork the repository
+- Create a feature branch: `git checkout -b feature/new-feature-suggestion`
+- Perform and commit your changes
+- Push to the branch
+- Open a [pull request](https://github.com/Spaxterr/nexus-nf/pulls)
+
+## Links
+
+- [NPM Package](https://www.npmjs.com/package/nexus-nf)
+- [GitHub Repository](https://github.com/Spaxterr/nexus-nf)
