@@ -23,9 +23,23 @@ services, endpoint groups and endpoints.
 npm install nexus-nf nats
 ```
 
+**Required! Enable TypeScript Decorators**
+
+```jsonc
+// tsconfig.json
+{
+    ...
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+}
+```
+
 ## Quick Start
 
+**Implementation**
+
 ```typescript
+// index.ts
 import { connect } from 'nats';
 import { Controller, Endpoint, NexusApp } from 'nexus-nf';
 
