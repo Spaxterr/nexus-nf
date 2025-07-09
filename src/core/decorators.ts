@@ -13,6 +13,11 @@ export interface NexusController {
     endpoints: EndpointEntry[];
 }
 
+/**
+ * Options that can be passed to a controller decorator.
+ *
+ * @property queue NATS queue
+ */
 export interface ControllerOptions {
     queue?: string;
 }
@@ -21,6 +26,15 @@ export interface ControllerOptions {
  * Create a new controller, representing an endpoint group for a NATS microservice.
  *
  * @param name Name of controller / endpoint group.
+ * @param options Optional controller options.
+ * @example
+ * ```typescript
+ * // Creates a "math" endpoint group with queue `math-queue`
+ * \@Controller('math', { queue: 'math-queue' })
+ * export class MathController {
+ *    ...
+ * }
+ * ```
  */
 export function Controller(name: string, options?: ControllerOptions) {
     return function <T extends { new (...args: any[]): {} }>(constructor: T) {
@@ -53,6 +67,17 @@ export function Controller(name: string, options?: ControllerOptions) {
  * Create a new endpoint on a controller class. The endpoint will be added to the group name passed to the constructor of the controller class.
  *
  * @param name Name of the endpoint.
+ * @example
+ * ```typescript
+ * \@Controller('math')
+ * export class MathController {
+ *    // Creates a "math.add" endpoint
+ *    \@Endpoint('add')
+ *    public async add(message) {
+ *       // ...
+ *    }
+ * }
+ * ```
  */
 export function Endpoint(name: string) {
     return function (target: any, _: string, descriptor: PropertyDescriptor) {

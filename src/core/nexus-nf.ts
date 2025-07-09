@@ -13,6 +13,17 @@ export interface SuccessResponse {
     data: any;
 }
 
+/**
+ * Main application class for NexusNF service.
+ *
+ * @example
+ * ```typescript
+ * const nc = await connect(...);
+ * const service = await nc.services.add(...)
+ * const app = new NexusApp(nc, service);
+ * app.registerController(new ExampleController());
+ * ```
+ */
 export class NexusApp {
     public readonly natsConnection: NatsConnection;
     public readonly service: Service;
@@ -20,6 +31,10 @@ export class NexusApp {
     private readonly groups: Map<string, ServiceGroup>;
     private readonly registeredControllers: Set<NexusController>;
 
+    /**
+     * @param natsConnection NATS connection instance
+     * @param natsService NATS service instance
+     */
     constructor(natsConnection: NatsConnection, natsService: Service) {
         this.natsConnection = natsConnection;
         this.service = natsService;

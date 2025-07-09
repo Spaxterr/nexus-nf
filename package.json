@@ -21,7 +21,7 @@
         "LICENSE"
     ],
     "scripts": {
-        "build": "npm run clean && npm run build:types && npm run build:esm && npm run build:cjs",
+        "build": "npm run clean && npm run build:types && npm run build:esm && npm run build:cjs && npm run docs",
         "build:types": "tsc --emitDeclarationOnly --outDir dist",
         "build:esm": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.mjs --external:nats",
         "build:cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.js --external:nats",
@@ -34,7 +34,7 @@
         "test": "jest",
         "prepublishOnly": "npm run build && npm run lint",
         "release": "np",
-        "docs": "typedoc src/index.ts",
+        "docs": "typedoc src/index.ts --out docs/api",
         "commitlint": "commitlint --edit"
     },
     "keywords": [
