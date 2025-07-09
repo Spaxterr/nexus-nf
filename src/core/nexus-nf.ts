@@ -1,5 +1,6 @@
 import { type Msg, type NatsConnection, NatsError, type Service, type ServiceClient, type ServiceGroup } from 'nats';
-import { CONTROLLER_MARKER, type EndpointHandler, NexusController } from './decorators';
+import { CONTROLLER_MARKER, type EndpointHandler } from './decorators';
+import { DuplicateControllerError, InvalidControllerError } from './errors';
 
 export interface ErrorResponse {
     error: true;
@@ -43,17 +44,23 @@ export class NexusApp {
         this.registeredControllers = new Set();
     }
 
+    /** Gracefully stops the NATS connection and service */
     public async shutdown(): Promise<void> {
         await this.service.stop();
         await this.natsConnection.close();
     }
 
+    /**
+     * Register a controller/endpoint group to the NexusNF app.
+     *
+     * @param controller Controller class that has been decorated by `@Controller`
+     */
     public registerController(controller: any) {
         if (controller.constructor[CONTROLLER_MARKER] !== true) {
-            throw new Error('Only classes decorated by @Controller may be registered on a Nexus app');
+            throw new InvalidControllerError('Only classes decorated by @Controller may be registered on a Nexus app');
         }
-        if (this.registeredControllers.has(controller)) {
-            throw new Error(`Controller has already been registered`);
+        if (this.registeredControllers.has(controller.constructor)) {
+            throw new DuplicateControllerError(`Controller has already been registered`);
         }
 
         let group = this.groups.get(controller.group);
