@@ -1,6 +1,7 @@
 import { type Msg, type NatsConnection, NatsError, type Service, type ServiceClient, type ServiceGroup } from 'nats';
-import { CONTROLLER_MARKER, type EndpointHandler } from './decorators';
+import { CONTROLLER_MARKER, type EndpointEntry, type NexusController } from './decorators';
 import { DuplicateControllerError, InvalidControllerError } from './errors';
+import { ZodError } from 'zod';
 
 export interface ErrorResponse {
     error: true;
@@ -31,6 +32,7 @@ export class NexusApp {
     public readonly client: ServiceClient;
     private readonly groups: Map<string, ServiceGroup>;
     private readonly registeredControllers: Set<ObjectConstructor>;
+    private readonly isDev: boolean;
 
     /**
      * @param natsConnection NATS connection instance
@@ -42,6 +44,7 @@ export class NexusApp {
         this.client = natsConnection.services.client();
         this.groups = new Map();
         this.registeredControllers = new Set();
+        this.isDev = process.env?.['NODE_ENV'] === 'dev';
     }
 
     /** Gracefully stops the NATS connection and service */
@@ -69,41 +72,85 @@ export class NexusApp {
             this.groups.set(controller.group, group);
         }
 
-        for (const endpoint of controller.endpoints) {
-            group.addEndpoint(endpoint.subject, {
+        for (const endpoint of (controller as NexusController).endpoints) {
+            group.addEndpoint(endpoint.name, {
                 handler: async (err: NatsError | null, msg: Msg) => {
-                    await this.wrapHandler(endpoint.handler, err, msg);
+                    await this.wrapHandler(endpoint, err, msg);
                 },
-                queue: controller.queue,
+                metadata: endpoint.options.metadata ?? {},
+                queue: endpoint.options.queue ?? '',
             });
         }
 
         this.registeredControllers.add(controller);
     }
 
-    private async wrapHandler(handler: EndpointHandler, err: NatsError | null, msg: Msg): Promise<void> {
-        if (err !== null) {
-            const errorResponse: ErrorResponse = {
+    private async parseMessageData(endpoint: EndpointEntry, msg: Msg): Promise<unknown> {
+        let data;
+        try {
+            data = msg.json();
+        } catch (err) {
+            if (err instanceof NatsError) {
+                data = msg.data;
+            } else {
+                throw err;
+            }
+        }
+
+        if (endpoint.options?.schema !== undefined) {
+            return await endpoint.options.schema.parseAsync(data);
+        }
+
+        return data;
+    }
+
+    private formatErrorResponse(err: unknown): ErrorResponse {
+        if (err instanceof ZodError) {
+            return {
                 error: true,
-                message: err.message ?? 'Unknown NATS Error',
-                code: err.code,
-                details: err.name,
+                code: '400',
+                message: 'Bad Request: Validation failed.',
+                details: err.issues,
             };
+        }
+
+        if (err instanceof NatsError) {
+            return {
+                error: true,
+                code: err.code ?? '500',
+                message: err.message,
+                details: this.isDev ? { name: err.name, stack: err.stack } : undefined,
+            };
+        }
+
+        if (err instanceof Error) {
+            return {
+                error: true,
+                code: '500',
+                message: 'Internal Server Error',
+                details: this.isDev ? { name: err.name, message: err.message, stack: err.stack } : undefined,
+            };
+        }
+
+        // Fallback for non-Error types being thrown
+        return {
+            error: true,
+            code: '500',
+            message: 'An unknown internal error occurred.',
+            details: this.isDev ? String(err) : undefined,
+        };
+    }
+
+    private async wrapHandler(endpoint: EndpointEntry, err: NatsError | null, msg: Msg): Promise<void> {
+        if (err !== null) {
+            const errorResponse = this.formatErrorResponse(err);
             msg.respond(JSON.stringify(errorResponse));
             return;
         }
 
         try {
-            type ParameterType = Parameters<typeof handler>;
-            let data: ParameterType | Uint8Array;
-            try {
-                data = msg.json<ParameterType>();
-            } catch {
-                // If message can't be parsed, fall back to raw data
-                data = msg.data;
-            }
-
-            const result = await handler(data);
+            const data = await this.parseMessageData(endpoint, msg);
+            const result = await endpoint.handler(data, msg.headers);
 
             const response: SuccessResponse = {
                 error: false,
@@ -112,14 +159,7 @@ export class NexusApp {
 
             msg.respond(JSON.stringify(response));
         } catch (err) {
-            const dev = process.env?.['NODE_ENV'] === 'dev';
-            const errorResponse: ErrorResponse = {
-                error: true,
-                message: dev && err instanceof Error ? err.message : 'Internal server error',
-                details: dev && err instanceof Error ? err.stack : undefined,
-                code: err instanceof NatsError ? err.code : '500',
-            };
-
+            const errorResponse = this.formatErrorResponse(err);
             msg.respond(JSON.stringify(errorResponse));
         }
     }

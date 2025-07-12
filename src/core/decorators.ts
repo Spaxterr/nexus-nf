@@ -1,8 +1,16 @@
-import { type EndpointOptions } from 'nats';
+import { type MsgHdrs, type EndpointOptions as NatsEndpointOptions } from 'nats';
+import { type ZodType } from 'zod';
 
-export type EndpointHandler = (...args: any[]) => Promise<any>;
-export interface EndpointEntry extends EndpointOptions {
+export type EndpointHandler = (data: any, headers?: MsgHdrs) => Promise<any>;
+
+export interface EndpointOptions extends Omit<NatsEndpointOptions, 'handler'> {
+    schema?: ZodType;
+}
+
+export interface EndpointEntry {
+    name: string;
     handler: EndpointHandler;
+    options: EndpointOptions;
 }
 
 export const CONTROLLER_MARKER = Symbol('nexus-controller');
@@ -67,6 +75,7 @@ export function Controller(name: string, options?: ControllerOptions) {
  * Create a new endpoint on a controller class. The endpoint will be added to the group name passed to the constructor of the controller class.
  *
  * @param name Name of the endpoint.
+ * @param options Endpoint options.
  * @example
  * ```typescript
  * \@Controller('math')
@@ -79,12 +88,15 @@ export function Controller(name: string, options?: ControllerOptions) {
  * }
  * ```
  */
-export function Endpoint(name: string) {
+export function Endpoint(name: string, options: Omit<EndpointOptions, 'subject'>) {
     return function (target: any, _: string, descriptor: PropertyDescriptor) {
         target.constructor.__endpoints__ ??= [];
         target.constructor.__endpoints__.push({
-            subject: name,
             handler: descriptor.value,
+            name,
+            options: {
+                ...options,
+            },
         } satisfies EndpointEntry);
     };
 }
