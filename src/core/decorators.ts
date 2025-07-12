@@ -88,14 +88,14 @@ export function Controller(name: string, options?: ControllerOptions) {
  * }
  * ```
  */
-export function Endpoint(name: string, options: Omit<EndpointOptions, 'subject'>) {
+export function Endpoint(name: string, options?: Omit<EndpointOptions, 'subject'>) {
     return function (target: any, _: string, descriptor: PropertyDescriptor) {
         target.constructor.__endpoints__ ??= [];
         target.constructor.__endpoints__.push({
             handler: descriptor.value,
             name,
             options: {
-                ...options,
+                ...(options ?? {}),
             },
         } satisfies EndpointEntry);
     };
