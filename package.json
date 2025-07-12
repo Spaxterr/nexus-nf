@@ -34,7 +34,7 @@
         "test": "jest",
         "prepublishOnly": "npm run build && npm run lint",
         "release": "np",
-        "docs": "typedoc src/index.ts --out docs/api",
+        "docs": "typedoc src/index.ts --out docs",
         "commitlint": "commitlint --edit"
     },
     "keywords": [
