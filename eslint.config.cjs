@@ -92,6 +92,7 @@ module.exports = [
                     ],
                 },
             ],
+            '@typescript-eslint/consistent-type-imports': 'error',
             '@typescript-eslint/no-empty-object-type': 'off',
             '@typescript-eslint/no-unnecessary-type-assertion': 'error',
             '@typescript-eslint/prefer-nullish-coalescing': 'error',
