@@ -23,9 +23,9 @@
     "scripts": {
         "build": "npm run clean && npm run build:types && npm run build:esm && npm run build:cjs && npm run docs",
         "build:types": "tsc --emitDeclarationOnly --outDir dist",
-        "build:esm": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.mjs --external:nats",
-        "build:cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.js --external:nats",
-        "clean": "rimraf dist",
+        "build:esm": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.mjs --packages=external --tree-shaking=true --sourcemap",
+        "build:cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.js --packages=external --tree-shaking=true --sourcemap",
+        "clean": "rimraf dist docs",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
         "lint:staged": "eslint --fix",
         "format": "prettier --write .",
@@ -46,10 +46,7 @@
     ],
     "author": "Spaxter <spaxtersurvival@gmail.com>",
     "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/Spaxterr/nexus-nf.git"
-    },
+    "repository": "https://github.com/Spaxterr/nexus-nf.git",
     "bugs": {
         "url": "https://github.com/Spaxterr/nexus-nf/issues"
     },
