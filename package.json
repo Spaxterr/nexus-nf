@@ -84,6 +84,7 @@
         "typescript": "^5.8.3"
     },
     "dependencies": {
-        "nats": "^2.29.3"
+        "nats": "^2.29.3",
+        "zod": "^4.0.5"
     }
 }
