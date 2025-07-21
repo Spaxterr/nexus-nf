@@ -87,17 +87,19 @@ export class NexusApp {
 
     private async parseMessageData(endpoint: EndpointEntry, msg: Msg): Promise<unknown> {
         let data;
+        const asBytes = endpoint.options?.asBytes ?? false;
         try {
-            data = msg.json();
+            data = asBytes ? msg.data : msg.json();
         } catch (err) {
-            if (err instanceof NatsError) {
-                data = msg.data;
+            if (err instanceof NatsError || err instanceof SyntaxError) {
+                // NatsError or SyntaxError is thrown when message can not be converted/parsed
+                data = msg.string();
             } else {
                 throw err;
             }
         }
 
-        if (endpoint.options?.schema !== undefined) {
+        if (endpoint.options?.schema) {
             return await endpoint.options.schema.parseAsync(data);
         }
 

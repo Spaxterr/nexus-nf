@@ -5,6 +5,7 @@ export type EndpointHandler = (data: any, headers?: MsgHdrs) => Promise<any>;
 
 export interface EndpointOptions extends Omit<NatsEndpointOptions, 'handler'> {
     schema?: ZodType;
+    asBytes?: boolean;
 }
 
 export interface EndpointEntry {
