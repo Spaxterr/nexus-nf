@@ -28,6 +28,14 @@
         "noUncheckedIndexedAccess": true,
         "emitDecoratorMetadata": true
     },
-    "include": ["src/**/*", "jest.config.js"],
-    "exclude": ["node_modules", "dist", "src/templates"]
+    "include": ["src/**/*"],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "docs",
+        "src/templates",
+        "**/*.spec.ts",
+        "**/*.test.ts",
+        "src/test"
+    ]
 }
