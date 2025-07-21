@@ -4,7 +4,9 @@ import { type ZodType } from 'zod';
 export type EndpointHandler = (data: any, headers?: MsgHdrs) => Promise<any>;
 
 export interface EndpointOptions extends Omit<NatsEndpointOptions, 'handler'> {
+    /** {@link ZodType} schema to use for validation of input data */
     schema?: ZodType;
+    /** If <pre>true</pre>, data will be processed as <pre>UInt8Array</pre> instead of JSON/String */
     asBytes?: boolean;
 }
 
@@ -29,6 +31,10 @@ export interface NexusController {
  * @property queue NATS queue
  */
 export interface ControllerOptions {
+    /**
+     * Defines the default queue group for the controller's endpoints.
+     * @see https://docs.nats.io/nats-concepts/core-nats/queue for details
+     **/
     queue?: string;
 }
 
@@ -73,6 +79,7 @@ export function Controller(name: string, options?: ControllerOptions) {
     };
 }
 
+type EndpointEntryOptions = Omit<EndpointOptions, 'subject'>;
 /**
  * Create a new endpoint on a controller class. The endpoint will be added to the group name passed to the constructor of the controller class.
  *
@@ -90,7 +97,7 @@ export function Controller(name: string, options?: ControllerOptions) {
  * }
  * ```
  */
-export function Endpoint(name: string, options?: Omit<EndpointOptions, 'subject'>) {
+export function Endpoint(name: string, options?: EndpointEntryOptions) {
     return function (target: any, _: string, descriptor: PropertyDescriptor) {
         target.constructor.__endpoints__ ??= [];
         target.constructor.__endpoints__.push({
