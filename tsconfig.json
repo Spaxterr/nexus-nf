@@ -28,6 +28,6 @@
         "noUncheckedIndexedAccess": true,
         "emitDecoratorMetadata": true
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "jest.config.js"],
     "exclude": ["node_modules", "dist", "src/templates"]
 }
