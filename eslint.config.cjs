@@ -102,7 +102,7 @@ module.exports = [
                 {
                     allowString: false,
                     allowNumber: false,
-                    allowNullableObject: false,
+                    allowNullableObject: true,
                 },
             ],
             '@typescript-eslint/switch-exhaustiveness-check': 'error',
