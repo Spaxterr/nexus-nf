@@ -17,6 +17,7 @@ export interface EndpointEntry {
 export const CONTROLLER_MARKER = Symbol('nexus-controller');
 
 export interface NexusController {
+    constructor: any;
     group: string;
     queue?: string | undefined;
     endpoints: EndpointEntry[];

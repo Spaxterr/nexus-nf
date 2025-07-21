@@ -82,7 +82,7 @@ export class NexusApp {
             });
         }
 
-        this.registeredControllers.add(controller);
+        this.registeredControllers.add(controller.constructor);
     }
 
     private async parseMessageData(endpoint: EndpointEntry, msg: Msg): Promise<unknown> {
