@@ -1,23 +1,67 @@
 import { type MsgHdrs, type EndpointOptions as NatsEndpointOptions } from 'nats';
 import { type ZodType } from 'zod';
 
+/**
+ * Service endpoint handler signature.
+ * Must return a {@link Promise}, resolved value will be included in the response message's `data` field.
+ * Throwing an error from an endpoint handler will respond to the message with an ErrorResponse.
+ *
+ * @param data The incoming message data, parsed from JSON, string or byte array
+ * @param headers Optional NATS message headers
+ * @returns Promise resolving to response data
+ *
+ * @example
+ * ```typescript
+ * @Endpoint('example')
+ * async exampleHandler(data, headers) {
+ *  return { hello: 'world' }
+ * }
+ * ```
+ */
 export type EndpointHandler = (data: any, headers?: MsgHdrs) => Promise<any>;
 
+/**
+ * Configuration options for a NATS endpoint, extends the base NATS endpoint options.
+ * `handler` is omitted since the handler is set by the {@link Endpoint} decorator.
+ *
+ * @public
+ */
 export interface EndpointOptions extends Omit<NatsEndpointOptions, 'handler'> {
-    /** {@link ZodType} schema to use for validation of input data */
+    /**
+     * {@link ZodType} schema to use for validation of input data
+     * When provided, incoming message data will be validated against this schema
+     * before being passed to the handler.
+     */
     schema?: ZodType;
-    /** If <pre>true</pre>, data will be processed as <pre>UInt8Array</pre> instead of JSON/String */
+    /**
+     * If `true`, data will be processed as `Uint8Array` instead of JSON/String.
+     */
     asBytes?: boolean;
 }
 
+/**
+ * Internal representation of an endpoint within a controller.
+ *
+ * @internal
+ */
 export interface EndpointEntry {
     name: string;
     handler: EndpointHandler;
     options: EndpointOptions;
 }
 
+/**
+ * Symbol used to mark classes as NexusNF controllers.
+ *
+ * @internal
+ */
 export const CONTROLLER_MARKER = Symbol('nexus-controller');
 
+/**
+ * Internal interface representing a fully configured NexusNF controller.
+ *
+ * @internal
+ */
 export interface NexusController {
     constructor: any;
     group: string;
@@ -26,31 +70,69 @@ export interface NexusController {
 }
 
 /**
- * Options that can be passed to a controller decorator.
+ * Configuration options for the {@link Controller} decorator.
  *
- * @property queue NATS queue
+ * @public
  */
 export interface ControllerOptions {
     /**
-     * Defines the default queue group for the controller's endpoints.
-     * @see https://docs.nats.io/nats-concepts/core-nats/queue for details
-     **/
+     * Defines the default queue group for all endpoints in this controller.
+     * Queue groups enable load balancing - only one member of a queue group
+     * will receive each message.
+     *
+     * @see {@link https://docs.nats.io/nats-concepts/core-nats/queue | NATS Queue Groups Documentation}
+     *
+     * @example
+     * ```typescript
+     * // All endpoints in this controller will use 'math-workers' queue
+     * @Controller('math', { queue: 'math-workers' })
+     * export class MathController {
+     *   // This creates subject 'math.add' with queue 'math-workers'
+     *   @Endpoint('add')
+     *   async add(data: { a: number; b: number }) {
+     *     return { result: data.a + data.b };
+     *   }
+     * }
+     * ```
+     */
     queue?: string;
 }
 
 /**
- * Create a new controller, representing an endpoint group for a NATS microservice.
+ * Class decorator that creates a NATS microservice controller representing
+ * a group of related endpoints.
  *
- * @param name Name of controller / endpoint group.
- * @param options Optional controller options.
- * @example
+ * @param name Name of the controller/endpoint group
+ * @param options Optional configuration for the controller
+ *
+ * @returns Class decorator function
+ *
+ * @example Basic controller
  * ```typescript
- * // Creates a "math" endpoint group with queue `math-queue`
- * \@Controller('math', { queue: 'math-queue' })
- * export class MathController {
- *    ...
+ * @Controller('user')
+ * export class UserController {
+ *   @Endpoint('create')
+ *   async createUser(userData: any) {
+ *     // Creates endpoint: user.create
+ *     return { id: 123, ...userData };
+ *   }
  * }
  * ```
+ *
+ * @example Controller with queue group
+ * ```typescript
+ * @Controller('payment', { queue: 'payment-processors' })
+ * export class PaymentController {
+ *   @Endpoint('process')
+ *   async processPayment(paymentData: any) {
+ *     // Creates endpoint: payment.process
+ *     // Uses queue: payment-processors
+ *     return { transactionId: 'txn_123' };
+ *   }
+ * }
+ * ```
+ *
+ * @public
  */
 export function Controller(name: string, options?: ControllerOptions) {
     return function <T extends { new (...args: any[]): {} }>(constructor: T) {
@@ -79,23 +161,66 @@ export function Controller(name: string, options?: ControllerOptions) {
     };
 }
 
-type EndpointEntryOptions = Omit<EndpointOptions, 'subject'>;
 /**
- * Create a new endpoint on a controller class. The endpoint will be added to the group name passed to the constructor of the controller class.
+ * Endpoint options without the subject property (managed by the framework).
+ */
+type EndpointEntryOptions = Omit<EndpointOptions, 'subject'>;
+
+/**
+ * Method decorator that creates a NATS endpoint within a controller.
+ * The full subject name will be `{controller.group}.{endpoint.name}`.
  *
- * @param name Name of the endpoint.
- * @param options Endpoint options.
- * @example
+ * @param name - Name of the endpoint (combined with controller group)
+ * @param options - Optional endpoint configuration
+ *
+ * @returns Method decorator function
+ *
+ * @example Basic endpoint
  * ```typescript
- * \@Controller('math')
+ * @Controller('math')
  * export class MathController {
- *    // Creates a "math.add" endpoint
- *    \@Endpoint('add')
- *    public async add(message) {
- *       // ...
- *    }
+ *   @Endpoint('add')
+ *   async add(data: { a: number; b: number }) {
+ *     // Endpoint subject: math.add
+ *     return { result: data.a + data.b };
+ *   }
  * }
  * ```
+ *
+ * @example Endpoint with validation schema
+ * ```typescript
+ * import { z } from 'zod';
+ *
+ * const addSchema = z.object({
+ *   a: z.number(),
+ *   b: z.number()
+ * });
+ *
+ * type AddPayload = z.output<typeof MathSchema>;
+ *
+ * @Controller('math')
+ * export class MathController {
+ *   @Endpoint('add', { schema: addSchema })
+ *   async add(data: AddPayload) {
+ *     // Data is validated before reaching this handler
+ *     return { result: data.a + data.b };
+ *   }
+ * }
+ * ```
+ *
+ * @example Binary data endpoint
+ * ```typescript
+ * @Controller('file')
+ * export class FileController {
+ *   @Endpoint('process', { asBytes: true })
+ *   async processFile(data: Uint8Array) {
+ *     // Handle raw binary data
+ *     return { size: data.length };
+ *   }
+ * }
+ * ```
+ *
+ * @public
  */
 export function Endpoint(name: string, options?: EndpointEntryOptions) {
     return function (target: any, _: string, descriptor: PropertyDescriptor) {
