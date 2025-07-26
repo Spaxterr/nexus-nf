@@ -2,6 +2,12 @@ export const mockService = {
     addEndpoint: jest.fn(),
     addGroup: jest.fn().mockReturnThis(),
     stop: jest.fn(),
+    info: jest.fn().mockReturnValue({
+        name: 'test-service',
+        version: '0.0.0',
+        id: 'TESTSVC',
+        description: 'Test service',
+    }),
 };
 
 export const mockNatsConnection = {
@@ -10,6 +16,7 @@ export const mockNatsConnection = {
         client: jest.fn(),
     },
     close: jest.fn(),
+    getServer: jest.fn().mockReturnValue('0.0.0.0:4222'),
 };
 
 export class NatsError extends Error {
