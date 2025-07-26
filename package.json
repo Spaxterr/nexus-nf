@@ -87,7 +87,10 @@
         "typescript": "^5.8.3"
     },
     "dependencies": {
+        "chalk": "^5.4.1",
         "nats": "^2.29.3",
+        "util": "^0.12.5",
+        "winston": "^3.17.0",
         "zod": "^4.0.5"
     }
 }
