@@ -152,7 +152,9 @@ export class NexusApp {
 
         try {
             const data = await this.parseMessageData(endpoint, msg);
-            const result = await endpoint.handler(data, msg.headers);
+            this.logger.debug(`Parsed message data`, { meta: { result: data } });
+            const returnValue = endpoint.handler(data, msg.headers);
+            const result = returnValue instanceof Promise ? await endpoint.handler(data, msg.headers) : returnValue;
 
             const response: SuccessResponse = {
                 error: false,

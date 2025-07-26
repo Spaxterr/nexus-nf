@@ -18,7 +18,7 @@ import { type ZodType } from 'zod';
  * }
  * ```
  */
-export type EndpointHandler = (data: any, headers?: MsgHdrs) => Promise<any>;
+export type EndpointHandler = (data: any, headers?: MsgHdrs) => Promise<any> | any;
 
 /**
  * Configuration options for a NATS endpoint, extends the base NATS endpoint options.
