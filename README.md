@@ -19,23 +19,13 @@ services, endpoint groups and endpoints.
 - **NATS Service Integration**: Uses NATS's service discovery and
   request-response patterns.
 
-## Installation
+## Installation and set-up
+
+It is highly recommended to use the project generation script to create your
+NexusNF service.
 
 ```bash
-npm install nexus-nf nats
-```
-
-**Required! Enable TypeScript Decorators**
-
-```jsonc
-// tsconfig.json
-{
-    "compilerOptions": {
-        // ...
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-    },
-}
+npx create-nexus-service
 ```
 
 ## Implementation
