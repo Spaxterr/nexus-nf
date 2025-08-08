@@ -1,6 +1,6 @@
 {
     "name": "nexus-nf",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "description": "NexusNF is a lightweight and simple framework for building NATS microservices with TypeScript",
     "type": "module",
     "main": "./dist/index.js",
