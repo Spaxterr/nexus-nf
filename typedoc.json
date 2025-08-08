@@ -1,0 +1,29 @@
+{
+    "entryPoints": ["src/core/index.ts"],
+    "out": "docs",
+    "theme": "default",
+    "name": "Nexus NF",
+    "includeVersion": true,
+    "exclude": [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/*.test.ts",
+        "**/*.spec.ts"
+    ],
+    "excludePrivate": true,
+    "excludeProtected": false,
+    "excludeInternal": true,
+    "readme": "README.md",
+    "plugin": ["typedoc-plugin-markdown"],
+    "sort": ["source-order"],
+    "categorizeByGroup": true,
+    "defaultCategory": "Other",
+    "categoryOrder": [
+        "Classes",
+        "Interfaces",
+        "Types",
+        "Functions",
+        "Variables",
+        "*"
+    ]
+}
