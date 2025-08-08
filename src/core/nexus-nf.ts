@@ -6,32 +6,75 @@ import winston from 'winston';
 import chalk from 'chalk';
 import util from 'util';
 
+/**
+ * Represents an error response returned by the NexusNF service when request processing fails or an exception is thrown.
+ *
+ * @example Validation error response
+ * ```json
+ * {
+ *  "error": true,
+ *  "message": "Bad Request: Validation failed.",
+ *  "code": "400",
+ *  "details": [{ "path": ["email"], "message": "Invalid email format" }]
+ * }
+ * ```
+ */
 export interface ErrorResponse {
+    /** Always `true` for error responses */
     error: true;
+    /** Human-readable error message */
     message: string;
+    /** Error code (optional, defaults to "500") */
     code?: string;
+    /** Additional error details such as stacktraces (only in dev mode) or validation information*/
     details?: unknown;
 }
 
-export interface SuccessResponse {
+/**
+ * Represents a successful response returned by a NexusNF endpoint.
+ *
+ * @template T The type of the response data
+ *
+ * @example Successful sign-up response
+ * ```json
+ * {
+ *  "error": false,
+ *  "data": { "id": 5007, "name": "John Doe", "email": "john@example.com" }
+ * }
+ * ```
+ */
+export interface SuccessResponse<T = any> {
+    /** Always `false` for successful responses */
     error: boolean;
-    data: any;
+    /** The response payload data */
+    data: T;
 }
 
 /**
  * Main application class for NexusNF service.
  *
- * @example
+ * @example Basic setup
  * ```typescript
- * const nc = await connect(...);
- * const service = await nc.services.add(...)
+ * import { connect } from 'nats';
+ * import { NexusApp } from './nexus-app';
+ *
+ * const nc = await connect({ servers: 'nats://localhost:4222' });
+ * const service = await nc.services.add({
+ *   name: 'user-service',
+ *   version: '1.0.0',
+ *   description: 'User management service'
+ * });
+ *
  * const app = new NexusApp(nc, service);
- * app.registerController(new ExampleController());
+ * app.registerController(new UserController());
  * ```
  */
 export class NexusApp {
+    /** The underlying NATS connection */
     public readonly natsConnection: NatsConnection;
+    /** The NATS service instance */
     public readonly service: Service;
+    /** Service client for communicating with NATS services */
     public readonly client: ServiceClient;
     private readonly groups: Map<string, ServiceGroup>;
     private readonly registeredControllers: Set<ObjectConstructor>;
@@ -78,11 +121,27 @@ export class NexusApp {
     }
 
     /**
-     * Register a controller/endpoint group to the NexusNF app.
+     * Register a controller instance with the NexusNF service, making its decorated methods available as NATS service endpoints.
+     *
+     * The passed `controller` must be decorated with `@Controller` and contain methods decorated with `@Endpoint`.
+     * Endpoints are automatically registered under the controller's group name.
      *
      * @param controller Controller class that has been decorated by `@Controller`
+     *
+     * @example Register a user controller
+     * ```typescript
+     * @Controller('users')
+     * class UserController {
+     *  @Endpoint('find')
+     *  findUser(data: { id: number }) {
+     *    return { id: data.id, name: 'John' }
+     *  }
+     * }
+     *
+     * app.registerController(new UserController());
+     * ```
      */
-    public registerController(controller: any) {
+    public registerController<T extends NexusController>(controller: T) {
         if (controller.constructor[CONTROLLER_MARKER] !== true) {
             this.logger.error(chalk.red('Invalid controller registration attempted'), {
                 controllerName: controller.constructor.name,
