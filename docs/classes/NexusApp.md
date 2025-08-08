@@ -1,4 +1,4 @@
-[**Nexus NF v0.4.0**](../README.md)
+[**Nexus NF v0.4.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: NexusApp
 
-Defined in: [nexus-nf.ts:72](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L72)
+Defined in: [nexus-nf.ts:72](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L72)
 
 Main application class for NexusNF service.
 
@@ -33,7 +33,7 @@ app.registerController(new UserController());
 
 > **new NexusApp**(`natsConnection`, `natsService`): `NexusApp`
 
-Defined in: [nexus-nf.ts:88](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L88)
+Defined in: [nexus-nf.ts:88](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L88)
 
 #### Parameters
 
@@ -59,7 +59,7 @@ NATS service instance
 
 > `readonly` **natsConnection**: `NatsConnection`
 
-Defined in: [nexus-nf.ts:74](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L74)
+Defined in: [nexus-nf.ts:74](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L74)
 
 The underlying NATS connection
 
@@ -69,7 +69,7 @@ The underlying NATS connection
 
 > `readonly` **service**: `Service`
 
-Defined in: [nexus-nf.ts:76](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L76)
+Defined in: [nexus-nf.ts:76](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L76)
 
 The NATS service instance
 
@@ -79,7 +79,7 @@ The NATS service instance
 
 > `readonly` **client**: `ServiceClient`
 
-Defined in: [nexus-nf.ts:78](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L78)
+Defined in: [nexus-nf.ts:78](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L78)
 
 Service client for communicating with NATS services
 
@@ -89,7 +89,7 @@ Service client for communicating with NATS services
 
 > **shutdown**(): `Promise`\<`void`\>
 
-Defined in: [nexus-nf.ts:117](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L117)
+Defined in: [nexus-nf.ts:117](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L117)
 
 Gracefully stops the NATS connection and service
 
@@ -103,7 +103,7 @@ Gracefully stops the NATS connection and service
 
 > **registerController**\<`T`\>(`controller`): `void`
 
-Defined in: [nexus-nf.ts:144](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L144)
+Defined in: [nexus-nf.ts:144](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L144)
 
 Register a controller instance with the NexusNF service, making its decorated methods available as NATS service endpoints.
 

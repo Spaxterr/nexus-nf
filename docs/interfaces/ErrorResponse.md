@@ -1,4 +1,4 @@
-[**Nexus NF v0.4.0**](../README.md)
+[**Nexus NF v0.4.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Interface: ErrorResponse
 
-Defined in: [nexus-nf.ts:22](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L22)
+Defined in: [nexus-nf.ts:22](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L22)
 
 Represents an error response returned by the NexusNF service when request processing fails or an exception is thrown.
 
@@ -27,7 +27,7 @@ Represents an error response returned by the NexusNF service when request proces
 
 > **error**: `true`
 
-Defined in: [nexus-nf.ts:24](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L24)
+Defined in: [nexus-nf.ts:24](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L24)
 
 Always `true` for error responses
 
@@ -37,7 +37,7 @@ Always `true` for error responses
 
 > **message**: `string`
 
-Defined in: [nexus-nf.ts:26](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L26)
+Defined in: [nexus-nf.ts:26](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L26)
 
 Human-readable error message
 
@@ -47,7 +47,7 @@ Human-readable error message
 
 > `optional` **code**: `string`
 
-Defined in: [nexus-nf.ts:28](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L28)
+Defined in: [nexus-nf.ts:28](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L28)
 
 Error code (optional, defaults to "500")
 
@@ -57,6 +57,6 @@ Error code (optional, defaults to "500")
 
 > `optional` **details**: `unknown`
 
-Defined in: [nexus-nf.ts:30](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L30)
+Defined in: [nexus-nf.ts:30](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L30)
 
 Additional error details such as stacktraces (only in dev mode) or validation information

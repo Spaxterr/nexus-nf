@@ -1,4 +1,4 @@
-[**Nexus NF v0.4.0**](../README.md)
+[**Nexus NF v0.4.1**](../README.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **Controller**(`name`, `options?`): \<`T`\>(`constructor`) => \{(...`args`): `(Anonymous class)`\<`T`\>; `prototype`: `(Anonymous class)`\<`any`\>; \} & `T`
 
-Defined in: [decorators.ts:137](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/decorators.ts#L137)
+Defined in: [decorators.ts:137](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/decorators.ts#L137)
 
 Class decorator that creates a NATS microservice controller representing
 a group of related endpoints.

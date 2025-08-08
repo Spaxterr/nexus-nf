@@ -1,4 +1,4 @@
-[**Nexus NF v0.4.0**](../README.md)
+[**Nexus NF v0.4.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Interface: SuccessResponse\<T\>
 
-Defined in: [nexus-nf.ts:46](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L46)
+Defined in: [nexus-nf.ts:46](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L46)
 
 Represents a successful response returned by a NexusNF endpoint.
 
@@ -33,7 +33,7 @@ The type of the response data
 
 > **error**: `boolean`
 
-Defined in: [nexus-nf.ts:48](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L48)
+Defined in: [nexus-nf.ts:48](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L48)
 
 Always `false` for successful responses
 
@@ -43,6 +43,6 @@ Always `false` for successful responses
 
 > **data**: `T`
 
-Defined in: [nexus-nf.ts:50](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/nexus-nf.ts#L50)
+Defined in: [nexus-nf.ts:50](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/nexus-nf.ts#L50)
 
 The response payload data

@@ -1,4 +1,4 @@
-[**Nexus NF v0.4.0**](../README.md)
+[**Nexus NF v0.4.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Interface: ControllerOptions
 
-Defined in: [decorators.ts:77](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/decorators.ts#L77)
+Defined in: [decorators.ts:77](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/decorators.ts#L77)
 
 Configuration options for the [Controller](../functions/Controller.md) decorator.
 
@@ -16,7 +16,7 @@ Configuration options for the [Controller](../functions/Controller.md) decorator
 
 > `optional` **queue**: `string`
 
-Defined in: [decorators.ts:98](https://github.com/Spaxterr/nexus-nf/blob/dfa6d0a2b203d7b6864a5a6e5f2af2f3151f865d/src/core/decorators.ts#L98)
+Defined in: [decorators.ts:98](https://github.com/Spaxterr/nexus-nf/blob/8db83c67234287cb454464be694d5e1c6647ab41/src/core/decorators.ts#L98)
 
 Defines the default queue group for all endpoints in this controller.
 Queue groups enable load balancing - only one member of a queue group

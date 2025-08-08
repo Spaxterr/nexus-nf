@@ -1,8 +1,8 @@
-[**Nexus NF v0.4.0**](README.md)
+[**Nexus NF v0.4.1**](README.md)
 
 ***
 
-# Nexus NF v0.4.0
+# Nexus NF v0.4.1
 
 ## Classes
 
