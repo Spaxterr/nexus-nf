@@ -1,23 +1,41 @@
 # Nexus NF
 
+---
+
+<p align="center">
+<img src="logo.png" alt="NexusNF Logo" width="500">
+</p>
+<p align="center">
+A lightweight, declarative framework for building robust and type-safe microservices with NATS.
+</p>
+<p align="center">
+<a href="https://www.npmjs.com/package/nexus-nf"><img src="https://img.shields.io/npm/v/nexus-nf.svg" alt="NPM Version"></a>
+<a href="https://www.npmjs.com/package/nexus-nf"><img alt="NPM Last Update" src="https://img.shields.io/npm/last-update/nexus-nf"></a>
+<a href="https://github.com/Spaxterr/nexus-nf/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/nexus-nf.svg" alt="License"></a>
+<a href="https://spaxterr.github.io/nexus-nf/docs"><img src="https://img.shields.io/badge/docs-stable-blue.svg" alt="Documentation"></a>
+</p>
+
+---
+
 Nexus NF or Nexus NATS Framework is a lightweight and easy-to-use framework for
 building NATS microservices using TypeScript. Nexus utilizes NATS's built-in
 [service API](https://docs.nats.io/using-nats/developer/services) to register
 services, endpoint groups and endpoints.
 
-> ⚠️ **Early Development**: NexusNF is currently in very early stages of
-> development. Expect changes, missing features and bugs. Please report issues
-> on [GitHub](https://github.com/Spaxterr/nexus-nf/issues/new).
+> ⚠️ **Project Status**: Nexus NF is currently in active development. Stability
+> is a major focus, but breaking changes and bugs may occur. Please provide
+> feedback and report issues on
+> [GitHub](https://github.com/Spaxterr/nexus-nf/issues/new).
 
 ## Features
 
-- **Easy to use**: NexusNF focuses on simplicity and unopinionated approaches.
-  Although terminology like "Controllers" are used, the framework does not force
-  you to use a specific approach or design.
+- **Flexibility**: Nexus NF does not impose or enforce a specific design
+  pattern, giving you the flexibility to build services in your own way.
 - **TypeScript Support**: Full type-safety included.
 - **Data Validation**: Built-in support for data validation with Zod schemas.
-- **NATS Service Integration**: Uses NATS's service discovery and
-  request-response patterns.
+- **NATS Service Integration**: Build on the NATS service API and
+  request-response patterns, offering discovery, monitoring and load balancing
+  out of the box.
 - **Standardized Responses**: Consistent response format for both successful
   messages and errors.
 
