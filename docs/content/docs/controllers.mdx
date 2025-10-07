@@ -1,0 +1,380 @@
+---
+title: Controllers
+description: Learn how to create and configure controllers in NexusNF
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+# Controllers
+
+Controllers are the foundation of NexusNF applications. They group related endpoints under a common namespace and provide configuration options for request handling.
+
+## Creating a Controller
+
+Create a controller by extending the `ControllerBase` class:
+
+```typescript
+import { ControllerBase, Endpoint } from 'nexusnf';
+
+export class UserController extends ControllerBase {
+  constructor() {
+    super('users');
+  }
+
+  @Endpoint('create')
+  async createUser(data: any) {
+    // Endpoint subject: users.create
+    return { id: 123, name: data.name };
+  }
+
+  @Endpoint('find')
+  async findUser(data: { id: number }) {
+    // Endpoint subject: users.find
+    return { id: data.id, name: 'John Doe' };
+  }
+}
+
+// All endpoints will be prefixed with 'users.'
+// - users.create
+// - users.find
+```
+
+## Instantiation
+
+Controllers are instantiated and registered using the NexusApp instance.
+
+```typescript
+const app = new NexusApp(nc, service);
+
+// Register controller
+app.registerController(new UserController());
+```
+
+<Callout type="info">
+  The group name becomes the subject prefix for all endpoints in the controller.
+</Callout>
+
+## Controller Options
+
+Controllers accept optional configuration to customize behavior:
+
+### Queue Groups
+
+Queue groups enable load balancing across multiple service instances. Only one member of a queue group will receive each message:
+
+```typescript
+export class PaymentController extends ControllerBase {
+  constructor() {
+    super('payment', { queue: 'payment-processors' });
+  }
+
+  @Endpoint('process')
+  async processPayment(data: any) {
+    return { transactionId: 'txn_123' };
+  }
+}
+
+// Register as usual
+app.registerController(new PaymentController());
+```
+
+When you run multiple instances of this service, NATS will distribute requests across all instances in the `payment-processors` queue group.
+
+<Callout type="warn">
+  Queue groups are essential for horizontal scaling. Without them, all service instances will receive every message.
+</Callout>
+
+## Endpoint Decorator
+
+The `@Endpoint` decorator marks methods as service endpoints:
+
+```typescript
+@Endpoint(name: string, options?: EndpointOptions)
+```
+
+### Basic Usage
+
+```typescript
+export class MathController extends ControllerBase {
+  @Endpoint('add')
+  async add(data: { a: number; b: number }) {
+    return { result: data.a + data.b };
+  }
+}
+```
+
+### With Validation Schema
+
+```typescript
+import { z } from 'zod';
+
+const userSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  age: z.number().min(18)
+});
+
+export class UserController extends ControllerBase {
+  @Endpoint('create', { schema: userSchema })
+  async createUser(data: z.infer<typeof userSchema>) {
+    // Data is automatically validated by zod
+    return { id: 123, ...data };
+  }
+}
+```
+
+### Binary Data Handling
+
+Process raw binary data instead of JSON. This is useful for e.g., files or non-JSON messages:
+
+```typescript
+export class FileController extends ControllerBase {
+  @Endpoint('upload', { asBytes: true })
+  async uploadFile(data: Uint8Array) {
+    return {
+      size: data.length,
+      processed: true
+    };
+  }
+}
+```
+
+### Endpoint-Specific Queue
+
+Override the controller's queue group for specific endpoints:
+
+```typescript
+export class OrderController extends ControllerBase {
+  constructor() {
+    super('orders', { queue: 'order-workers' });
+  }
+
+  @Endpoint('create')
+  async createOrder(data: any) {
+    // Uses controller's default queue
+    return { orderId: 'ord_123' };
+  }
+
+  @Endpoint('process', { queue: 'priority-processors' })
+  async processPriorityOrder(data: any) {
+    // Uses endpoint-specific queue
+    return { orderId: 'ord_456', priority: true };
+  }
+}
+```
+
+## Endpoint Metadata
+
+Add custom metadata to endpoints for documentation or routing:
+
+```typescript
+export class ApiController extends ControllerBase {
+  @Endpoint('data', {
+    metadata: {
+      version: '2.0',
+      description: 'Fetches user data'
+    }
+  })
+  async getData(data: any) {
+    return { data: 'example' };
+  }
+}
+```
+
+<Callout type="info">
+  Metadata is available through the NATS service discovery API and can be used by monitoring tools or API gateways.
+</Callout>
+
+## Method Signatures
+
+Endpoint handlers receive two parameters:
+
+```typescript
+async handler(data: any, headers?: MsgHdrs): Promise<any>
+```
+
+- **data**: The parsed message payload (JSON, string, or Uint8Array)
+- **headers**: Optional NATS message headers
+
+### Using Headers
+
+```typescript
+import { NatsError, type MsgHdrs } from 'nats';
+
+export class AuthController extends ControllerBase {
+  @Endpoint('verify')
+  async verifyToken(data: any, headers?: MsgHdrs) {
+    const token = headers?.get('Authorization');
+
+    if (!token) {
+      throw new NatsError('Missing authorization header', '401');
+    }
+
+    return { valid: true, userId: 123 };
+  }
+}
+```
+
+## Async vs Sync Handlers
+
+Both synchronous and asynchronous handlers are supported:
+
+<Tabs items={['Async', 'Sync']}>
+<Tab value="Async">
+```typescript
+export class DataController extends ControllerBase {
+  @Endpoint('fetch')
+  async fetchData(data: { id: string }) {
+    const result = await database.query(data.id);
+    return result;
+  }
+}
+```
+</Tab>
+
+<Tab value="Sync">
+```typescript
+export class MathController extends ControllerBase {
+  @Endpoint('add')
+  add(data: { a: number; b: number }) {
+    return { result: data.a + data.b };
+  }
+}
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+  The framework automatically handles both sync and async handlers. Use async when performing I/O operations.
+</Callout>
+
+## Error Handling
+
+Throwing errors in handlers automatically generates error responses:
+
+```typescript
+import { NatsError } from 'nats';
+
+export class UserController extends ControllerBase {
+  @Endpoint('find')
+  async findUser(data: { id: number }) {
+    const user = await database.findUser(data.id);
+
+    if (!user) {
+      throw new NatsError('User not found', '404');
+    }
+
+    return user;
+  }
+}
+```
+
+Response:
+```json
+{
+  "error": true,
+  "message": "User not found",
+  "code": "404",
+  "details": {
+    "name": "Error",
+    "message": "User not found"
+  }
+}
+```
+
+Learn more about error handling in the [Error Handling](/docs/error-handling) guide.
+
+## Best Practices
+
+### 1. Make use of TypeScript for Type Safety
+
+```typescript
+interface CreateUserInput {
+  name: string;
+  email: string;
+  age: number;
+}
+
+interface UserResponse {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export class UserController extends ControllerBase {
+  @Endpoint('create', { schema: userSchema })
+  async createUser(data: CreateUserInput): Promise<UserResponse> {
+    return {
+      id: 123,
+      name: data.name,
+      email: data.email
+    };
+  }
+}
+```
+
+### 2. Organize Related Endpoints
+
+Group related functionality in the same controller:
+
+```typescript
+export class UserController extends ControllerBase {
+  @Endpoint('create')
+  async create(data: any) { /* ... */ }
+
+  @Endpoint('update')
+  async update(data: any) { /* ... */ }
+
+  @Endpoint('delete')
+  async delete(data: any) { /* ... */ }
+
+  @Endpoint('find')
+  async find(data: any) { /* ... */ }
+}
+```
+
+### 3. Use Validation Schemas
+
+Validate input data with Zod schemas:
+
+```typescript
+import { z } from 'zod';
+
+const schemas = {
+  create: z.object({
+    name: z.string().min(1),
+    email: z.string().email()
+  }),
+  update: z.object({
+    id: z.number(),
+    name: z.string().min(1).optional(),
+    email: z.string().email().optional()
+  })
+};
+
+export class UserController extends ControllerBase {
+  @Endpoint('create', { schema: schemas.create })
+  async create(data: z.infer<typeof schemas.create>) { /* ... */ }
+
+  @Endpoint('update', { schema: schemas.update })
+  async update(data: z.infer<typeof schemas.update>) { /* ... */ }
+}
+```
+
+### 4. Leverage Queue Groups for Scaling
+
+```typescript
+export class OrderController extends ControllerBase {
+  constructor() {
+    super('orders', { queue: 'order-processors' });
+  }
+}
+```
+
+## Next Steps
+
+- Learn about [Validation](/docs/validation) with Zod schemas
+- Explore [Error Handling](/docs/error-handling) strategies
+- See [Examples](/docs/examples) for common patterns
+

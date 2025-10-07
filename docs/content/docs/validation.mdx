@@ -1,0 +1,286 @@
+---
+title: Data Validation
+description: Learn how to validate incoming data with Zod schemas in NexusNF
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+# Validation
+
+NexusNF provides built-in request validation using [Zod](https://zod.dev/), a TypeScript-first schema validation library. When a schema is provided, incoming data is automatically validated before reaching your handler.
+
+## Why Validation Matters
+
+Input data validation ensures that your endpoints receive data in the expected format, preventing runtime errors and improving security:
+
+- **Type Safety** - Catch type mismatches before processing
+- **Data Integrity** - Ensure required fields are present
+- **Security** - Reject malformed or malicious input
+- **Better Error Messages** - Provide clear feedback to clients
+
+<Callout type="info">
+  Validation happens automatically before your handler is called. Invalid data never reaches your business logic.
+</Callout>
+
+## Basic Validation
+
+Define a Zod schema and pass it to the `@Endpoint` decorator:
+
+```typescript
+import { ControllerBase, Endpoint } from 'nexusnf';
+import { z } from 'zod';
+
+const createUserSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  age: z.number().min(18)
+});
+
+export class UserController extends ControllerBase {
+  @Endpoint('create', { schema: createUserSchema })
+  async createUser(data: z.infer<typeof createUserSchema>) {
+    // data is guaranteed to be valid here
+    return {
+      id: 123,
+      name: data.name,
+      email: data.email,
+      age: data.age
+    };
+  }
+}
+```
+
+### Validation Error Response
+
+When validation fails, NexusNF automatically returns a structured error response:
+
+```json
+{
+  "error": true,
+  "code": "400",
+  "message": "Bad Request: Validation failed.",
+  "details": [
+    {
+      "code": "invalid_type",
+      "expected": "string",
+      "received": "number",
+      "path": ["name"],
+      "message": "Expected string, received number"
+    },
+    {
+      "code": "invalid_string",
+      "validation": "email",
+      "path": ["email"],
+      "message": "Invalid email"
+    }
+  ]
+}
+```
+
+<Callout type="warn">
+  Validation errors return HTTP 400 (Bad Request) status code. The `details` array contains all validation issues found.
+</Callout>
+
+Read more about more advanced schema patterns on the [Zod API Documentation](https://zod.dev/api).
+
+## Schema Organization
+
+### Separate Schema Files
+
+Keep schemas organized in dedicated files:
+
+```typescript
+// schemas/user.schema.ts
+import { z } from 'zod';
+
+export const createUserSchema = z.object({
+  name: z.string().min(1).max(100),
+  email: z.string().email(),
+  age: z.number().min(18).max(120)
+});
+
+export const updateUserSchema = createUserSchema.partial().extend({
+  id: z.number().int().positive()
+});
+
+export const findUserSchema = z.object({
+  id: z.number().int().positive()
+});
+
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type FindUserInput = z.infer<typeof findUserSchema>;
+```
+
+```typescript
+// controllers/user.controller.ts
+import { ControllerBase, Endpoint } from 'nexusnf';
+import {
+  createUserSchema,
+  updateUserSchema,
+  findUserSchema,
+  type CreateUserInput,
+  type UpdateUserInput,
+  type FindUserInput
+} from '../schemas/user.schema';
+
+export class UserController extends ControllerBase {
+  @Endpoint('create', { schema: createUserSchema })
+  async createUser(data: CreateUserInput) {
+    return { id: 123, ...data };
+  }
+
+  @Endpoint('update', { schema: updateUserSchema })
+  async updateUser(data: UpdateUserInput) {
+    return { id: data.id, updated: true };
+  }
+
+  @Endpoint('find', { schema: findUserSchema })
+  async findUser(data: FindUserInput) {
+    return { id: data.id, name: 'John Doe' };
+  }
+}
+```
+
+### Reusable Schema Components
+
+Build complex schemas from reusable components:
+
+```typescript
+// schemas/common.schema.ts
+import { z } from 'zod';
+
+export const idSchema = z.number().int().positive();
+export const emailSchema = z.string().email().toLowerCase();
+export const timestampSchema = z.string().datetime();
+export const paginationSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(100).default(20)
+});
+
+// schemas/user.schema.ts
+import { idSchema, emailSchema, paginationSchema } from './common.schema';
+
+export const userSchema = z.object({
+  id: idSchema,
+  name: z.string().min(1),
+  email: emailSchema
+});
+
+export const listUsersSchema = paginationSchema.extend({
+  role: z.enum(['user', 'admin']).optional(),
+  search: z.string().optional()
+});
+```
+
+## Validation Best Practices
+
+### 1. Be Specific with Error Messages
+
+```typescript
+const userSchema = z.object({
+  name: z.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be less than 100 characters'),
+  email: z.string()
+    .email('Invalid email address'),
+  age: z.number()
+    .min(18, 'You must be at least 18 years old')
+    .max(120, 'Please enter a valid age')
+});
+```
+
+### 2. Use Enums for Fixed Values
+
+```typescript
+const orderSchema = z.object({
+  status: z.enum(['pending', 'processing', 'completed', 'cancelled']),
+  priority: z.enum(['low', 'medium', 'high']),
+  paymentMethod: z.enum(['card', 'paypal', 'crypto'])
+});
+```
+
+### 3. Validate Business Rules - Be as strict as possible
+
+```typescript
+const bookingSchema = z.object({
+  checkIn: z.string().datetime(),
+  checkOut: z.string().datetime(),
+  guests: z.number().int().min(1).max(10)
+}).refine(data => {
+  const checkIn = new Date(data.checkIn);
+  const checkOut = new Date(data.checkOut);
+  return checkOut > checkIn;
+}, {
+  message: 'Check-out date must be after check-in date',
+  path: ['checkOut']
+});
+```
+
+### 4. Use Coercion Carefully
+
+```typescript
+// Coerce string to number
+const querySchema = z.object({
+  userId: z.coerce.number().int().positive(),
+  includeDeleted: z.coerce.boolean().optional()
+});
+
+// Input: { userId: "123", includeDeleted: "true" }
+// Parsed: { userId: 123, includeDeleted: true }
+```
+
+<Callout type="warn">
+  Be careful with coercion - it can hide data quality issues. Use explicit transforms when you need control over the conversion logic.
+</Callout>
+
+## Performance Considerations
+
+### Schema Compilation
+
+Define schemas outside of your class to avoid recompilation:
+
+<Tabs items={['Good', 'Bad']}>
+<Tab value="Good">
+```typescript
+// ✅ Schema defined once
+const userSchema = z.object({
+  name: z.string(),
+  email: z.string().email()
+});
+
+export class UserController extends ControllerBase {
+  @Endpoint('create', { schema: userSchema })
+  async createUser(data: z.infer<typeof userSchema>) {
+    return { id: 123, ...data };
+  }
+}
+```
+</Tab>
+
+<Tab value="Bad">
+```typescript
+// ❌ Schema created on every endpoint registration
+export class UserController extends ControllerBase {
+  @Endpoint('create', {
+    schema: z.object({
+      name: z.string(),
+      email: z.string().email()
+    })
+  })
+  async createUser(data: any) {
+    return { id: 123, ...data };
+  }
+}
+```
+</Tab>
+</Tabs>
+
+## Next Steps
+
+- Learn about [Error Handling](/docs/error-handling) for other types of errors
+- Explore [Controllers](/docs/controllers) for endpoint organization
+- See [Examples](/docs/examples) for example validation patterns
+
+---

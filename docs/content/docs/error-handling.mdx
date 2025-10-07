@@ -1,0 +1,317 @@
+---
+title: Error Handling
+description: Learn how to handle errors gracefully in NexusNF applications
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+# Error Handling
+
+NexusNF provides automatic error handling for all endpoints. When an error occurs, it's automatically caught, formatted, and returned to the client in a consistent structure.
+
+## Error Response Format
+
+All errors return a standardized `ErrorResponse`:
+
+```typescript
+interface ErrorResponse {
+  error: true;
+  message: string;
+  code?: string;
+  details?: unknown;
+}
+```
+
+Example error response:
+
+```json
+{
+  "error": true,
+  "message": "Internal Server Error",
+  "code": "500",
+  "details": {
+    "name": "Error",
+    "message": "Database connection failed"
+  }
+}
+```
+
+<Callout type="warn">
+  In production mode (`NODE_ENV !== 'dev'`), error details like stack traces are automatically omitted for security.
+</Callout>
+
+## Error Types
+
+### 1. Validation Errors (400)
+
+Automatically generated when Zod schema validation fails:
+
+```typescript
+import { z } from 'zod';
+
+const userSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email()
+});
+
+export class UserController extends ControllerBase {
+  @Endpoint('create', { schema: userSchema })
+  async createUser(data: z.infer<typeof userSchema>) {
+    return { id: 123, ...data };
+  }
+}
+```
+
+Sending invalid data:
+```json
+// Request
+{ "name": "", "email": "not-an-email" }
+
+// Response
+{
+  "error": true,
+  "code": "400",
+  "message": "Bad Request: Validation failed.",
+  "details": [
+    {
+      "code": "too_small",
+      "minimum": 1,
+      "path": ["name"],
+      "message": "String must contain at least 1 character(s)"
+    },
+    {
+      "code": "invalid_string",
+      "validation": "email",
+      "path": ["email"],
+      "message": "Invalid email"
+    }
+  ]
+}
+```
+
+### 2. NATS Errors
+
+NATS-specific errors are automatically formatted:
+
+```typescript
+export class MessageController extends ControllerBase {
+  @Endpoint('send')
+  async sendMessage(data: any) {
+    // If NATS connection fails or timeout occurs
+    await this.natsConnection.request('other.service', data, { timeout: 1000 });
+    return { sent: true };
+  }
+}
+```
+
+Response on NATS error:
+```json
+{
+  "error": true,
+  "code": "TIMEOUT",
+  "message": "Request timeout",
+  "details": {
+    "name": "NatsError",
+    "stack": "..." // Only in development
+  }
+}
+```
+
+### 3. Application Errors (500)
+
+Standard JavaScript errors thrown in your handlers:
+
+```typescript
+export class UserController extends ControllerBase {
+  @Endpoint('find')
+  async findUser(data: { id: number }) {
+    const user = await database.findById(data.id);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return user;
+  }
+}
+```
+
+Response:
+```json
+{
+  "error": true,
+  "code": "500",
+  "message": "Internal Server Error",
+  "details": {
+    "name": "Error",
+    "message": "User not found",
+    "stack": "..." // Only in development
+  }
+}
+```
+
+## Error Handling Patterns
+
+### Try-Catch for Expected Errors
+
+Handle expected errors gracefully:
+
+```typescript
+export class PaymentController extends ControllerBase {
+  @Endpoint('process')
+  async processPayment(data: { amount: number; customerId: string }) {
+    try {
+      const payment = await paymentGateway.charge({
+        amount: data.amount,
+        customerId: data.customerId
+      });
+
+      return {
+        transactionId: payment.id,
+        status: 'success'
+      };
+    } catch (error) {
+      if (error instanceof PaymentGatewayError) {
+        // Handle specific payment errors
+        throw new Error(`Payment failed: ${error.message}`);
+      }
+
+      // Re-throw unexpected errors
+      throw error;
+    }
+  }
+}
+```
+
+### Validation Beyond Schema
+
+Perform additional validation in your handler:
+
+```typescript
+export class OrderController extends ControllerBase {
+  @Endpoint('create', { schema: orderSchema })
+  async createOrder(data: z.infer<typeof orderSchema>) {
+    // Schema validation passed, now check business rules
+    const user = await this.getUser(data.userId);
+    if (!user.verified) {
+      throw new NatsError('User account not verified', '403');
+    }
+
+    const inventory = await this.checkInventory(data.productId);
+    if (inventory < data.quantity) {
+      throw new NatsError('Insufficient inventory', '400');
+    }
+
+    return await this.database.createOrder(data);
+  }
+}
+```
+
+### Resource Cleanup
+
+Ensure resources are cleaned up even when errors occur:
+
+```typescript
+export class FileController extends ControllerBase {
+  @Endpoint('process', { asBytes: true })
+  async processFile(data: Uint8Array) {
+    const tempFile = await this.saveTempFile(data);
+
+    try {
+      const result = await this.analyzeFile(tempFile);
+      return result;
+    } finally {
+      // Always clean up, even if an error occurred
+      await this.deleteTempFile(tempFile);
+    }
+  }
+}
+```
+
+## Development vs Production
+
+### Development Mode
+
+In development (`NODE_ENV=dev`), error responses include full details:
+
+```json
+{
+  "error": true,
+  "code": "500",
+  "message": "Internal Server Error",
+  "details": {
+    "name": "Error",
+    "message": "Database connection failed",
+    "stack": "Error: Database connection failed\n    at UserController.findUser (/app/controllers/user.ts:15:13)\n    ..."
+  }
+}
+```
+
+### Production Mode
+
+In production, sensitive details are omitted:
+
+```json
+{
+  "error": true,
+  "code": "500",
+  "message": "Internal Server Error"
+}
+```
+
+<Callout type="warn">
+  Never rely on error details being present in production. Always handle errors gracefully on the client side.
+</Callout>
+
+## Logging Errors
+
+NexusNF automatically logs errors using Winston:
+
+```typescript
+// Automatic logging happens internally
+// You'll see colored, formatted logs in your console
+
+// [10:30:45.123] [error]: An error occurred during the processing of the message
+// {
+//   message: '{"error":true,"code":"500","message":"Internal Server Error"}',
+//   responseTopic: '_INBOX.abc123'
+// }
+```
+
+### Custom Logging
+
+Add your own logging for specific scenarios:
+
+```typescript
+export class UserController extends ControllerBase {
+  private logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.json(),
+    transports: [
+      new winston.transports.File({ filename: 'error.log', level: 'error' }),
+      new winston.transports.File({ filename: 'combined.log' })
+    ]
+  });
+
+  @Endpoint('create', { schema: userSchema })
+  async createUser(data: z.infer<typeof userSchema>) {
+    try {
+      const user = await database.createUser(data);
+      this.logger.info('User created', { userId: user.id, email: data.email });
+      return user;
+    } catch (error) {
+      this.logger.error('Failed to create user', {
+        error: error.message,
+        data: data
+      });
+      throw error; // Re-throw for NexusNF error handling
+    }
+  }
+}
+```
+
+## Next Steps
+
+- Review [Validation](/docs/validation) for preventing errors with schemas
+- Learn about [Controllers](/docs/controllers) for organizing your endpoints

@@ -1,0 +1,178 @@
+---
+title: Getting Started
+description: Learn how to build NATS-based microservices with nexus-nf
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { File, Folder, Files } from 'fumadocs-ui/components/files';
+
+# Getting Started
+
+nexus-nf is a TypeScript framework for building NATS-based microservices with a decorator-driven approach. It provides automatic request/response handling, validation, and error management.
+
+## Prerequisites
+Before you use nexus-nf to build microservices, you will need to
+* Have a basic understanding of TypeScript and NodeJS
+* Understand NATS on at least a surface level
+
+The nexus-nf documentation will **not** teach you TypeScript, NodeJS or NATS. Basic level knowledge is expected and assumed.
+
+## Installation
+
+<Steps>
+<Step>
+
+### Use the project generator
+
+```bash
+npx create-nexus-service
+```
+
+</Step>
+
+<Step>
+
+### Create your first controller
+
+Create a controller by extending `ControllerBase` and decorating methods with `@Endpoint`:
+
+```typescript
+import { ControllerBase, Endpoint } from 'nexus-nf';
+import { z } from 'zod';
+
+// Create a zod schema for data validation
+const addSchema = z.object({
+  firstNumber: z.number(),
+  secondNumber: z.number()
+});
+
+export class MathController extends ControllerBase {
+  constructor() {
+    super('math');
+  }
+
+  @Endpoint('add', { schema: addSchema })
+  async add(data: z.infer<typeof addSchema>): Promise<number> {
+    return data.firstNumber + data.secondNumber;
+  }
+}
+```
+
+</Step>
+
+<Step>
+
+### Initialize the application
+
+Connect to NATS and register your controllers:
+
+```typescript
+import { connect } from 'nats';
+import { NexusApp } from 'nexus-nf';
+import { MathController } from './controllers/math';
+
+async function main() {
+  // Connect to NATS
+  const nc = await connect({
+    servers: 'nats://localhost:4222'
+  });
+
+  // Create a NATS service
+  const service = await nc.services.add({
+    name: 'math-service',
+    version: '1.0.0',
+    description: 'Mathematical operations service'
+  });
+
+  // Initialize NexusApp
+  const app = new NexusApp(nc, service);
+
+  // Register controllers
+  app.registerController(new MathController());
+
+  console.log('Service running...');
+}
+
+main();
+```
+
+</Step>
+
+<Step>
+
+### Make requests
+
+Your endpoints are now available at `{group}.{endpoint}`:
+
+```bash
+nats request "math.add" '{"firstNumber": 10, "secondNumber": 15}'
+```
+
+</Step>
+</Steps>
+
+## Project Structure
+
+A typical nexus-nf project follows this structure:
+
+<Files>
+    <Folder defaultOpen="true" name="src">
+        <File name="index.ts" />
+        <Folder defaultOpen="true" name="controllers">
+            <File name="math.controller.ts" />
+        </Folder>
+    </Folder>
+    <File name="tsconfig.json" />
+    <File name="package.json" />
+</Files>
+
+<Callout type="info">
+  Controllers are the main building blocks of your application. Each controller groups related endpoints under a common namespace.
+</Callout>
+
+## Response Format
+
+All nexus-nf endpoints return responses in a standardized format:
+
+### Success Response
+
+```json
+{
+  "error": false,
+  "data": 8
+}
+```
+
+### Error Response
+
+```bash
+nats request "math.add" '{"firstNumber": "invalid", "secondNumber": 15}'
+```
+```json
+{
+  "error": true,
+  "message": "Bad Request: Validation failed.",
+  "code": "400",
+  "details": [
+    {
+      "path": ["firstNumber"],
+      "message": "Expected number, received string"
+    }
+  ]
+}
+```
+
+<Callout type="warn">
+  In production mode, error details like stack traces are automatically omitted. Set `NODE_ENV=dev` during development to see full error information.
+</Callout>
+
+## Next Steps
+
+- Learn about [Controllers](/docs/controllers) and how to organize your endpoints
+- Explore [Validation](/docs/validation) with Zod schemas
+- Understand [Error Handling](/docs/error-handling) patterns
+
+---
+
