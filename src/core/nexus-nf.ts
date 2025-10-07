@@ -1,10 +1,11 @@
 import { type Msg, type NatsConnection, NatsError, type Service, type ServiceClient, type ServiceGroup } from 'nats';
-import { CONTROLLER_MARKER, type EndpointEntry, type NexusController } from './decorators';
-import { DuplicateControllerError, InvalidControllerError } from './errors';
+import { type EndpointEntry, type NexusController } from './decorators';
+import { DuplicateControllerError } from './errors';
 import { ZodError } from 'zod';
 import winston from 'winston';
 import chalk from 'chalk';
 import util from 'util';
+import { type ControllerBase } from './controller';
 
 /**
  * Represents an error response returned by the NexusNF service when request processing fails or an exception is thrown.
@@ -141,15 +142,8 @@ export class NexusApp {
      * app.registerController(new UserController());
      * ```
      */
-    public registerController<T extends NexusController>(controller: T) {
-        if (controller.constructor[CONTROLLER_MARKER] !== true) {
-            this.logger.error(chalk.red('Invalid controller registration attempted'), {
-                controllerName: controller.constructor.name,
-                reason: 'Missing @Controller decorator',
-            });
-            throw new InvalidControllerError('Only classes decorated by @Controller may be registered on a Nexus app');
-        }
-        if (this.registeredControllers.has(controller.constructor)) {
+    public registerController<T extends ControllerBase>(controller: T) {
+        if (this.registeredControllers.has(controller.constructor as ObjectConstructor)) {
             this.logger.error(chalk.red('Duplicate controller registration attempted'), {
                 controllerName: controller.constructor.name,
                 group: controller.group,
@@ -176,7 +170,7 @@ export class NexusApp {
             this.logger.info(`  Registered endpoint ${subject}`);
         }
 
-        this.registeredControllers.add(controller.constructor);
+        this.registeredControllers.add(controller.constructor as ObjectConstructor);
     }
 
     private async parseMessageData(endpoint: EndpointEntry, msg: Msg): Promise<unknown> {

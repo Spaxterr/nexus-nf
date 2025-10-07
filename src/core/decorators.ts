@@ -1,5 +1,6 @@
 import { type MsgHdrs, type EndpointOptions as NatsEndpointOptions } from 'nats';
 import { type ZodType } from 'zod';
+import { ControllerBase } from './controller';
 
 /**
  * Service endpoint handler signature.
@@ -70,98 +71,6 @@ export interface NexusController {
 }
 
 /**
- * Configuration options for the {@link Controller} decorator.
- *
- * @public
- */
-export interface ControllerOptions {
-    /**
-     * Defines the default queue group for all endpoints in this controller.
-     * Queue groups enable load balancing - only one member of a queue group
-     * will receive each message.
-     *
-     * @see {@link https://docs.nats.io/nats-concepts/core-nats/queue | NATS Queue Groups Documentation}
-     *
-     * @example
-     * ```typescript
-     * // All endpoints in this controller will use 'math-workers' queue
-     * @Controller('math', { queue: 'math-workers' })
-     * export class MathController {
-     *   // This creates subject 'math.add' with queue 'math-workers'
-     *   @Endpoint('add')
-     *   async add(data: { a: number; b: number }) {
-     *     return { result: data.a + data.b };
-     *   }
-     * }
-     * ```
-     */
-    queue?: string;
-}
-
-/**
- * Class decorator that creates a NATS microservice controller representing
- * a group of related endpoints.
- *
- * @param name Name of the controller/endpoint group
- * @param options Optional configuration for the controller
- *
- * @returns Class decorator function
- *
- * @example Basic controller
- * ```typescript
- * @Controller('user')
- * export class UserController {
- *   @Endpoint('create')
- *   async createUser(userData: any) {
- *     // Creates endpoint: user.create
- *     return { id: 123, ...userData };
- *   }
- * }
- * ```
- *
- * @example Controller with queue group
- * ```typescript
- * @Controller('payment', { queue: 'payment-processors' })
- * export class PaymentController {
- *   @Endpoint('process')
- *   async processPayment(paymentData: any) {
- *     // Creates endpoint: payment.process
- *     // Uses queue: payment-processors
- *     return { transactionId: 'txn_123' };
- *   }
- * }
- * ```
- *
- * @public
- */
-export function Controller(name: string, options?: ControllerOptions) {
-    return function <T extends { new (...args: any[]): {} }>(constructor: T) {
-        (constructor as any)[CONTROLLER_MARKER] = true;
-
-        return class extends constructor implements NexusController {
-            public readonly group: string = name;
-            public readonly queue?: string | undefined;
-            public readonly endpoints: EndpointEntry[] = [];
-
-            constructor(...args: any[]) {
-                super(...args);
-                this.group = name;
-                this.queue = options?.queue;
-
-                // Extract endpoints from constructor data added by `@Endpoint`.
-                const endpoints: EndpointEntry[] = (constructor as any).__endpoints__ ?? [];
-                for (const endpoint of endpoints) {
-                    this.endpoints.push(endpoint);
-                }
-
-                // Freeze endpoints to prevent mutations after construction.
-                Object.freeze(this.endpoints);
-            }
-        };
-    };
-}
-
-/**
  * Endpoint options without the subject property (managed by the framework).
  */
 type EndpointEntryOptions = Omit<EndpointOptions, 'subject'>;
@@ -198,8 +107,11 @@ type EndpointEntryOptions = Omit<EndpointOptions, 'subject'>;
  *
  * type AddPayload = z.output<typeof MathSchema>;
  *
- * @Controller('math')
- * export class MathController {
+ * export class MathController extends ControllerBase {
+ *   constructor() {
+ *     super('math');
+ *   }
+ *
  *   @Endpoint('add', { schema: addSchema })
  *   async add(data: AddPayload) {
  *     // Data is validated before reaching this handler
@@ -210,8 +122,11 @@ type EndpointEntryOptions = Omit<EndpointOptions, 'subject'>;
  *
  * @example Binary data endpoint
  * ```typescript
- * @Controller('file')
- * export class FileController {
+ * export class FileController extends ControllerBase {
+ *   constructor() {
+ *     super('files');
+ *   }
+ *
  *   @Endpoint('process', { asBytes: true })
  *   async processFile(data: Uint8Array) {
  *     // Handle raw binary data
@@ -224,13 +139,17 @@ type EndpointEntryOptions = Omit<EndpointOptions, 'subject'>;
  */
 export function Endpoint(name: string, options?: EndpointEntryOptions) {
     return function (target: any, _: string, descriptor: PropertyDescriptor) {
-        target.constructor.__endpoints__ ??= [];
-        target.constructor.__endpoints__.push({
-            handler: descriptor.value,
-            name,
-            options: {
-                ...(options ?? {}),
-            },
-        } satisfies EndpointEntry);
+        if (target instanceof ControllerBase) {
+            (target.constructor as any).__endpoints__ ??= [];
+            (target.constructor as any).__endpoints__.push({
+                handler: descriptor.value,
+                name,
+                options: {
+                    ...(options ?? {}),
+                },
+            } satisfies EndpointEntry);
+        } else {
+            throw new TypeError('@Endpoint decorator can only be used on classes that extend ControllerBase');
+        }
     };
 }
