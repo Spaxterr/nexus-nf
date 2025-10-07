@@ -15,14 +15,15 @@ services, endpoint groups and endpoints.
   Although terminology like "Controllers" are used, the framework does not force
   you to use a specific approach or design.
 - **TypeScript Support**: Full type-safety included.
-- **Flexible Modules**: Supports both ESM and CommonJS.
+- **Data Validation**: Built-in support for data validation with Zod schemas.
 - **NATS Service Integration**: Uses NATS's service discovery and
   request-response patterns.
+- **Standardized Responses**: Consistent response format for both successful
+  messages and errors.
 
-## Installation and set-up
+## Installation
 
-It is highly recommended to use the project generation script to create your
-NexusNF service.
+Use the project generator to quickly set-up and install a Nexus NF project.
 
 ```bash
 npx create-nexus-service
@@ -30,114 +31,93 @@ npx create-nexus-service
 
 ## Implementation
 
-### Basic Example
-
 ```typescript
-// index.ts
 import { connect } from 'nats';
-import { Controller, Endpoint, NexusApp } from 'nexus-nf';
+import { NexusApp, ControllerBase, Endpoint } from 'nexus-nf';
+import { z } from 'zod';
 
-interface MathMessage {
-    firstNumber: number;
-    secondNumber: number;
-}
+// Define a schema
+const addSchema = z.object({
+    a: z.number(),
+    b: z.number(),
+});
 
-@Controller('math')
-class MathController {
-    @Endpoint('add')
-    async add(message: MathMessage) {
-        return message.firstNumber + message.secondNumber;
+// Create a controller
+class MathController extends ControllerBase {
+    constructor() {
+        super('math', { queue: 'math-queue' });
+    }
+
+    @Endpoint('add', { schema: addSchema })
+    async add(data: z.infer<typeof addSchema>) {
+        return { result: data.a + data.b };
     }
 
     @Endpoint('multiply')
-    async multiply(message: MathMessage) {
-        return message.firstNumber * message.secondNumber;
+    async multiply(data: { a: number; b: number }) {
+        return { result: data.a * data.b };
     }
 }
 
-// Connect to NATS and register the service
-const nc = await connect();
-const service = await nc.services.add({
-    name: 'example-service',
-    version: '1.0.0',
-});
+// Initialize and run
+async function main() {
+    const nc = await connect({ servers: 'nats://localhost:4222' });
 
-const app = new NexusApp(nc, service);
+    const service = await nc.services.add({
+        name: 'math-service',
+        version: '1.0.0',
+    });
 
-// Register the controller class
-app.registerController(new MathController());
+    const app = new NexusApp(nc, service);
+    app.registerController(new MathController());
+}
+
+main();
 ```
 
-Note that the `MathMessage` interface here is just for TypeScript hinting. For
-runtime endpoint data validation see [schema validation](#schema-validation)
-example.
-
-**Requesting the declared endpoint**
+### Making Requests
 
 ```bash
-nats request "math.add" '{"firstNumber": 10, "secondNumber": 15}'
-# {"error":false,"data":25}
-
-nats request "math.multiply" '{"firstNumber": 6, "secondNumber": 10}'
-# {"error":false,"data":60}
+nats request "math.add" '{"a": 5, "b": 3}'
 ```
 
-### Error Handling
+```json
+{ "error": false, "data": { "result": 8 } }
+```
 
-Errors thrown from endpoint handlers are automatically transformed into an error
-response.
+## Response Format
 
-```typescript
-@Controller('example')
-class ExampleController {
-    @Endpoint('error')
-    async exampleError() {
-        throw new NatsError('This is an example error', '500');
-    }
+All endpoints return standardized responses:
+
+**Success:**
+
+```json
+{
+    "error": false,
+    "data": { "result": 8 }
 }
 ```
 
-```bash
-nats request "example.error" ""
-# {"error":true,"message":"This is an example error","code":"500"}
-```
+**Error:**
 
-### Schema Validation
-
-NexusNF can integrate with [Zod](https://zod.dev/) for runtime data validation
-and message parsing. The provided `schema` in the `@Endpoint`'s options will be
-used to validate the incoming message body.
-
-```bash
-npm install zod
-```
-
-```typescript
-import * as z from 'zod';
-
-const MathSchema = z.object({
-    firstNumber: z.number(),
-    secondNumber: z.number(),
-});
-
-type MathPayload = z.output<typeof MathSchema>;
-
-@Controller('math')
-class MathController {
-    @Endpoint('add', { schema: MathSchema })
-    async add(message: MathPayload) {
-        return message.firstNumber + message.secondNumber;
-    }
+```json
+{
+  "error": true,
+  "message": "Bad Request: Validation failed.",
+  "code": "400",
+  "details": [...]
 }
 ```
 
-```bash
-nats request "math.add" '{"firstNumber": 10, "secondNumber": 15}'
-# {"error":false,"data":25}
+## Documentation
 
-nats request "math.add" '{"firstNumber": 10, "secondNumber": true}'
-# {"error":true,"code":"400","message":"Bad Request: Validation failed.","details":[{"expected":"number","code":"invalid_type","path":["secondNumber"],"message":"Invalid input: expected number, received boolean"}]}
-```
+For complete documentation, visit
+**[the documentation site](https://spaxterr.github.io/nexus-nf/docs)**.
+
+- [Getting Started](https://spaxterr.github.io/nexus-nf/docs)
+- [Controllers](https://spaxterr.github.io/nexus-nf/docs/controllers)
+- [Validation](https://spaxterr.github.io/nexus-nf/docs/validation)
+- [Error Handling](https://spaxterr.github.io/nexus-nf/docs/error-handling)
 
 ## Contribution Guide
 
@@ -155,4 +135,4 @@ nats request "math.add" '{"firstNumber": 10, "secondNumber": true}'
 
 - [NPM Package](https://www.npmjs.com/package/nexus-nf)
 - [GitHub Repository](https://github.com/Spaxterr/nexus-nf)
-- [API Documentation](https://spaxterr.github.io/nexus-nf/)
+- [API Documentation](https://spaxterr.github.io/nexus-nf/docs)
