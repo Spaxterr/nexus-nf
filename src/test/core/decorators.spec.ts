@@ -1,117 +1,19 @@
 /* eslint @typescript-eslint/explicit-member-accessibility: 0 */
 import { z } from 'zod';
-import {
-    Controller,
-    CONTROLLER_MARKER,
-    Endpoint,
-    type EndpointOptions,
-    type NexusController,
-} from '../../core/decorators';
+import { Endpoint, type EndpointOptions } from '../../core/decorators';
+import { ControllerBase } from '../../core/controller';
 
 describe('NexusNF Decorators', () => {
-    describe('@Controller', () => {
-        it('should mark a class with the controller marker', () => {
-            @Controller('test')
-            class TestController {}
-
-            expect((TestController as any)[CONTROLLER_MARKER]).toBe(true);
-        });
-
-        it('should create a controller with the correct group name', () => {
-            @Controller('user')
-            class UserController {}
-
-            const instance = new UserController() as NexusController;
-            expect(instance.group).toBe('user');
-        });
-
-        it('should create a controller without queue when not specified', () => {
-            @Controller('test')
-            class TestController {}
-
-            const instance = new TestController() as NexusController;
-            expect(instance.queue).toBeUndefined();
-        });
-
-        it('should create a controller with queue when specified', () => {
-            @Controller('payment', { queue: 'payment-workers' })
-            class PaymentController {}
-
-            const instance = new PaymentController() as NexusController;
-            expect(instance.group).toBe('payment');
-            expect(instance.queue).toBe('payment-workers');
-        });
-
-        it('should initialize endpoints array', () => {
-            @Controller('test')
-            class TestController {}
-
-            const instance = new TestController() as NexusController;
-            expect(instance.endpoints).toEqual([]);
-        });
-
-        it('should freeze the endpoints array', () => {
-            @Controller('test')
-            class TestController {}
-
-            const instance = new TestController() as NexusController;
-            expect(Object.isFrozen(instance.endpoints)).toBe(true);
-        });
-
-        it('should preserve constructor parameters', () => {
-            @Controller('test')
-            class TestController {
-                constructor(public value: string) {}
-            }
-
-            const instance = new TestController('hello') as TestController & NexusController;
-            expect(instance.value).toBe('hello');
-            expect(instance.group).toBe('test');
-        });
-
-        it('should preserve class methods', () => {
-            @Controller('test')
-            class TestController {
-                public getValue(): string {
-                    return 'test-value';
-                }
-            }
-
-            const instance = new TestController() as TestController & NexusController;
-            expect(instance.getValue()).toBe('test-value');
-        });
-
-        it('should work with inheritance', () => {
-            class BaseController {
-                public baseMethod(): string {
-                    return 'base';
-                }
-            }
-
-            @Controller('derived')
-            class DerivedController extends BaseController {
-                public derivedMethod(): string {
-                    return 'derived';
-                }
-            }
-
-            const instance = new DerivedController() as DerivedController & NexusController;
-            expect(instance.group).toBe('derived');
-            expect(instance.baseMethod()).toBe('base');
-            expect(instance.derivedMethod()).toBe('derived');
-        });
-    });
-
     describe('@Endpoint', () => {
         it('should add endpoint metadata to the constructor', () => {
-            class TestController {
+            class TestController extends ControllerBase {
                 @Endpoint('test')
                 public testMethod() {
                     return { success: true };
                 }
             }
 
-            const endpoints = (TestController as any).__endpoints__;
+            const endpoints = new TestController('test').endpoints;
             expect(endpoints).toHaveLength(1);
             expect(endpoints[0]).toMatchObject({
                 name: 'test',
@@ -121,7 +23,7 @@ describe('NexusNF Decorators', () => {
         });
 
         it('should handle multiple endpoints', () => {
-            class TestController {
+            class TestController extends ControllerBase {
                 @Endpoint('first')
                 firstMethod() {
                     return { data: 'first' };
@@ -133,10 +35,10 @@ describe('NexusNF Decorators', () => {
                 }
             }
 
-            const endpoints = (TestController as any).__endpoints__;
+            const endpoints = new TestController('test').endpoints;
             expect(endpoints).toHaveLength(2);
-            expect(endpoints[0].name).toBe('first');
-            expect(endpoints[1].name).toBe('second');
+            expect(endpoints[0]!.name).toBe('first');
+            expect(endpoints[1]!.name).toBe('second');
         });
 
         it('should preserve endpoint options', () => {
@@ -148,15 +50,15 @@ describe('NexusNF Decorators', () => {
                 metadata: { version: '1.0' },
             };
 
-            class TestController {
+            class TestController extends ControllerBase {
                 @Endpoint('test', options)
                 testMethod() {
                     return { success: true };
                 }
             }
 
-            const endpoints = (TestController as any).__endpoints__;
-            expect(endpoints[0].options).toMatchObject({
+            const endpoints = new TestController('test').endpoints;
+            expect(endpoints[0]!.options).toMatchObject({
                 schema: testSchema,
                 asBytes: true,
                 queue: 'test-queue',
@@ -165,32 +67,32 @@ describe('NexusNF Decorators', () => {
         });
 
         it('should work with no options', () => {
-            class TestController {
+            class TestController extends ControllerBase {
                 @Endpoint('simple')
                 simpleMethod() {
                     return { data: 'simple' };
                 }
             }
 
-            const endpoints = (TestController as any).__endpoints__;
-            expect(endpoints[0].options).toEqual({});
+            const endpoints = new TestController('test').endpoints;
+            expect(endpoints[0]!.options).toEqual({});
         });
 
         it('should preserve the original method functionality', async () => {
-            class TestController {
+            class TestController extends ControllerBase {
                 @Endpoint('calculate')
                 async calculate(data: { a: number; b: number }): Promise<any> {
                     return await Promise.resolve({ result: data.a + data.b });
                 }
             }
 
-            const instance = new TestController();
+            const instance = new TestController('test');
             const result = await instance.calculate({ a: 5, b: 3 });
             expect(result).toEqual({ result: 8 });
         });
 
         it('should handle async and non-async methods', async () => {
-            class TestController {
+            class TestController extends ControllerBase {
                 @Endpoint('async')
                 async asyncMethod() {
                     return await Promise.resolve({ type: 'async' });
@@ -202,7 +104,7 @@ describe('NexusNF Decorators', () => {
                 }
             }
 
-            const instance = new TestController();
+            const instance = new TestController('test');
             const asyncResult = await instance.asyncMethod();
             const syncResult = instance.syncMethod();
 
@@ -211,10 +113,9 @@ describe('NexusNF Decorators', () => {
         });
     });
 
-    describe('@Controller and @Endpoint integration', () => {
-        it('should combine controller and endpoint decorators correctly', () => {
-            @Controller('integration', { queue: 'integration-workers' })
-            class IntegrationController {
+    describe('ControllerBase and @Endpoint integration', () => {
+        it('should combine ControllerBase and endpoint decorators correctly', () => {
+            class IntegrationController extends ControllerBase {
                 @Endpoint('test', { asBytes: true })
                 testEndpoint(data: Uint8Array) {
                     return { size: data.length };
@@ -226,12 +127,11 @@ describe('NexusNF Decorators', () => {
                 }
             }
 
-            const instance = new IntegrationController() as IntegrationController & NexusController;
+            const instance = new IntegrationController('integration', { queue: 'integration-workers' });
 
             // Check controller properties
             expect(instance.group).toBe('integration');
             expect(instance.queue).toBe('integration-workers');
-            expect((IntegrationController as any)[CONTROLLER_MARKER]).toBe(true);
 
             // Check endpoints
             expect(instance.endpoints).toHaveLength(2);
@@ -251,15 +151,14 @@ describe('NexusNF Decorators', () => {
                 age: z.number().min(0),
             });
 
-            @Controller('user')
-            class UserController {
+            class UserController extends ControllerBase {
                 @Endpoint('create', { schema: userSchema })
                 createUser(data: z.infer<typeof userSchema>) {
                     return { id: 123, ...data };
                 }
             }
 
-            const instance = new UserController() as UserController & NexusController;
+            const instance = new UserController('user');
             const endpoint = instance.endpoints[0];
 
             expect(endpoint!.name).toBe('create');
@@ -272,8 +171,7 @@ describe('NexusNF Decorators', () => {
                 payload: z.unknown(),
             });
 
-            @Controller('complex', { queue: 'complex-processors' })
-            class ComplexController {
+            class ComplexController extends ControllerBase {
                 @Endpoint('process', {
                     schema: dataSchema,
                     asBytes: false,
@@ -288,13 +186,13 @@ describe('NexusNF Decorators', () => {
                 }
             }
 
-            const instance = new ComplexController() as ComplexController & NexusController;
-            const endpoint = instance.endpoints[0];
+            const instance = new ComplexController('complex', { queue: 'complex-processors' });
+            const endpoint = instance.endpoints[0]!;
 
             expect(instance.group).toBe('complex');
             expect(instance.queue).toBe('complex-processors');
-            expect(endpoint!.name).toBe('process');
-            expect(endpoint!.options).toMatchObject({
+            expect(endpoint.name).toBe('process');
+            expect(endpoint.options).toMatchObject({
                 schema: dataSchema,
                 asBytes: false,
                 queue: 'special-queue',
@@ -308,23 +206,22 @@ describe('NexusNF Decorators', () => {
 
     describe('Error cases and edge conditions', () => {
         it('should handle empty controller name', () => {
-            @Controller('')
-            class EmptyNameController {}
+            class EmptyNameController extends ControllerBase {}
 
-            const instance = new EmptyNameController() as NexusController;
+            const instance = new EmptyNameController('');
             expect(instance.group).toBe('');
         });
 
         it('should handle empty endpoint name', () => {
-            class TestController {
+            class TestController extends ControllerBase {
                 @Endpoint('')
                 emptyEndpoint() {
                     return {};
                 }
             }
 
-            const endpoints = (TestController as any).__endpoints__;
-            expect(endpoints[0].name).toBe('');
+            const endpoints = new TestController('test').endpoints;
+            expect(endpoints[0]!.name).toBe('');
         });
 
         it('should not interfere with non-decorated classes', () => {
@@ -335,7 +232,6 @@ describe('NexusNF Decorators', () => {
             }
 
             const instance = new RegularClass();
-            expect((RegularClass as any)[CONTROLLER_MARKER]).toBeUndefined();
             expect((RegularClass as any).__endpoints__).toBeUndefined();
             expect(instance.regularMethod()).toBe('regular');
         });
@@ -345,8 +241,7 @@ describe('NexusNF Decorators', () => {
         it('should preserve all endpoint metadata for framework use', () => {
             const schema = z.object({ id: z.number() });
 
-            @Controller('metadata-test', { queue: 'test-queue' })
-            class MetadataController {
+            class MetadataController extends ControllerBase {
                 @Endpoint('rich-endpoint', {
                     schema,
                     asBytes: false,
@@ -362,15 +257,15 @@ describe('NexusNF Decorators', () => {
                 }
             }
 
-            const instance = new MetadataController() as MetadataController & NexusController;
-            const endpoint = instance.endpoints[0];
+            const instance = new MetadataController('metadata-test', { queue: 'test-queue' });
+            const endpoint = instance.endpoints[0]!;
 
             // Verify all metadata is preserved
-            expect(endpoint!.name).toBe('rich-endpoint');
-            expect(endpoint!.options.schema).toBe(schema);
-            expect(endpoint!.options.asBytes).toBe(false);
-            expect(endpoint!.options.queue).toBe('endpoint-queue');
-            expect(endpoint!.options.metadata).toEqual({
+            expect(endpoint.name).toBe('rich-endpoint');
+            expect(endpoint.options.schema).toBe(schema);
+            expect(endpoint.options.asBytes).toBe(false);
+            expect(endpoint.options.queue).toBe('endpoint-queue');
+            expect(endpoint.options.metadata).toEqual({
                 rateLimit: '100',
                 auth: 'required',
                 description: 'A rich endpoint with lots of metadata',

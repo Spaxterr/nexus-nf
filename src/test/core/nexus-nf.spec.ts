@@ -1,9 +1,10 @@
 import { type Msg, type NatsConnection, NatsError, type Service } from 'nats';
 import { type ErrorResponse, NexusApp } from '../../core/nexus-nf';
-import { CONTROLLER_MARKER, type EndpointEntry, type NexusController } from '../../core/decorators';
+import { type EndpointEntry } from '../../core/decorators';
 import { mockNatsConnection, mockService } from '../mocks/nats.mock';
-import { DuplicateControllerError, InvalidControllerError } from '../../core/errors';
+import { DuplicateControllerError } from '../../core/errors';
 import * as z from 'zod';
+import { type ControllerBase } from '../../core/controller';
 
 jest.mock('nats');
 
@@ -15,27 +16,28 @@ describe('NexusApp', () => {
     const mockHandler = jest.fn();
 
     // Mock data factories
-    const createMockController = (overrides: Partial<NexusController> = {}): NexusController => ({
-        constructor: { [CONTROLLER_MARKER]: true } as any,
-        group: 'test',
-        endpoints: [
-            {
-                name: 'first-test-endpoint',
-                handler: mockHandler,
-                options: {
-                    metadata: { test: '1' },
+    const createMockController = (overrides: Partial<ControllerBase> = {}): ControllerBase =>
+        ({
+            group: 'test',
+            options: {},
+            endpoints: [
+                {
+                    name: 'first-test-endpoint',
+                    handler: mockHandler,
+                    options: {
+                        metadata: { test: '1' },
+                    },
                 },
-            },
-            {
-                name: 'second-test-endpoint',
-                handler: mockHandler,
-                options: {
-                    metadata: { test: '2' },
+                {
+                    name: 'second-test-endpoint',
+                    handler: mockHandler,
+                    options: {
+                        metadata: { test: '2' },
+                    },
                 },
-            },
-        ],
-        ...overrides,
-    });
+            ],
+            ...overrides,
+        }) as ControllerBase;
 
     const createMockMessage = (overrides: Partial<Msg> = {}): Msg => ({
         sid: 0,
@@ -83,12 +85,6 @@ describe('NexusApp', () => {
 
     describe('registerController', () => {
         describe('validation', () => {
-            it('should reject invalid controller class', () => {
-                const invalidController = {} as any;
-
-                expect(() => app.registerController(invalidController)).toThrow(InvalidControllerError);
-            });
-
             it('should reject duplicate controller registration', () => {
                 const controller = createMockController();
 
@@ -132,14 +128,14 @@ describe('NexusApp', () => {
 
     describe('wrapHandler', () => {
         let mockMessage: Msg;
-        let controller: NexusController;
+        let controller: ControllerBase;
 
         beforeEach(() => {
             mockMessage = createMockMessage();
             controller = createMockController();
         });
 
-        const getRegisteredHandler = (endpointIndex = 0, controllerRef: NexusController | undefined = undefined) => {
+        const getRegisteredHandler = (endpointIndex = 0, controllerRef: ControllerBase | undefined = undefined) => {
             controllerRef ??= controller;
             app.registerController(controllerRef);
             const groupMock = service.addGroup(controllerRef.group);
